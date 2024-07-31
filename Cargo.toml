@@ -17,3 +17,4 @@ env_logger = { version = "0.11.5", optional = true }
 
 [features]
 log = ["dep:log", "dep:env_logger"]
+debug = []
