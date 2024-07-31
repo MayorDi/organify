@@ -1,6 +1,6 @@
 use glfw::{Action, Context, Key};
 use nalgebra::Vector2;
-use organify::{traits::Render, world::World};
+use organify::{grid::Grid, traits::Render, world::World};
 
 fn main() {
     let mut glfw = glfw::init(glfw::fail_on_errors).unwrap();
@@ -39,6 +39,11 @@ fn main() {
     let mut world = World::new(Vector2::new(0.0, 0.0));
     world.render_init();
 
+    #[cfg(feature = "debug")]
+    let mut grid = Grid::new(world.position, world.radius);
+    #[cfg(feature = "debug")]
+    grid.render_init();
+
     #[cfg(feature = "log")]
     log::info!("Run the main loop");
 
@@ -63,6 +68,8 @@ fn main() {
             gl::ClearColor(0.1, 0.1, 0.1, 1.0);
 
             world.render();
+            #[cfg(feature = "debug")]
+            grid.render();
         }
 
         window.swap_buffers();

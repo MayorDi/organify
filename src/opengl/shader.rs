@@ -14,12 +14,7 @@ impl Shader {
         unsafe {
             let id = gl::CreateShader(type_shader);
             let string = std::ffi::CString::new(_src.clone()).unwrap();
-            gl::ShaderSource(
-                id,
-                1,
-                &string.as_ptr(),
-                std::ptr::null(),
-            );
+            gl::ShaderSource(id, 1, &string.as_ptr(), std::ptr::null());
 
             Self {
                 id,

@@ -11,8 +11,8 @@ use crate::{
 
 #[derive(Debug)]
 pub struct World {
-    position: Vector2<f32>,
-    radius: f32,
+    pub position: Vector2<f32>,
+    pub radius: f32,
     render_data: RenderData,
 }
 
