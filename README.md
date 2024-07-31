@@ -21,3 +21,6 @@ The main traits at the moment are:
 4. Movement
 
 Each trait in a cell contributes to its appearance, making the specialization of that cell more clear.
+
+Traits of base cell:
+![](./assets/traits.png)
