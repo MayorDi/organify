@@ -91,6 +91,10 @@ impl Render for World {
                 size_viewport[2] as f32,
                 size_viewport[3] as f32,
             );
+            gl::Uniform1f(
+                get_location(&self.render_data.program, "radius"),
+                self.radius,
+            );
             gl::BindVertexArray(self.render_data.vao);
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_BYTE, std::ptr::null());
             gl::BindVertexArray(0);

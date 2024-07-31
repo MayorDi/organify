@@ -18,7 +18,7 @@ fn main() {
         glfw::OpenGlProfileHint::Core,
     ));
     #[cfg(feature = "log")]
-    log::info!("OpenGL 3.3 core");
+    log::info!("OpenGL 3.3 core | Samples 4");
 
     let (mut window, events) = glfw
         .create_window(1200, 600, "Organify", glfw::WindowMode::Windowed)
@@ -41,7 +41,12 @@ fn main() {
 
     #[cfg(feature = "log")]
     log::info!("Run the main loop");
-    
+
+    unsafe {
+        gl::Enable(gl::BLEND);
+        gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+    }
+
     while !window.should_close() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
@@ -55,7 +60,7 @@ fn main() {
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::ClearColor(0.2, 0.2, 0.2, 1.0);
+            gl::ClearColor(0.1, 0.1, 0.1, 1.0);
 
             world.render();
         }
