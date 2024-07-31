@@ -1,4 +1,6 @@
 use glfw::{Action, Context, Key};
+use nalgebra::Vector2;
+use organify::{traits::Render, world::World};
 
 fn main() {
     let mut glfw = glfw::init(glfw::fail_on_errors).unwrap();
@@ -34,8 +36,12 @@ fn main() {
     #[cfg(feature = "log")]
     log::info!("load OpenGL functions");
 
+    let mut world = World::new(Vector2::new(0.0, 0.0));
+    world.render_init();
+
     #[cfg(feature = "log")]
     log::info!("Run the main loop");
+    
     while !window.should_close() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
@@ -50,6 +56,8 @@ fn main() {
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl::ClearColor(0.2, 0.2, 0.2, 1.0);
+
+            world.render();
         }
 
         window.swap_buffers();
