@@ -87,12 +87,12 @@ impl Render for World {
 
             gl::UseProgram(self.render_data.program.id());
             gl::Uniform2f(
-                get_location(&self.render_data.program, "resolution"),
+                get_location(&self.render_data.program, "u_resolution"),
                 size_viewport[2] as f32,
                 size_viewport[3] as f32,
             );
             gl::Uniform1f(
-                get_location(&self.render_data.program, "radius"),
+                get_location(&self.render_data.program, "u_radius"),
                 self.radius,
             );
             gl::BindVertexArray(self.render_data.vao);

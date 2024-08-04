@@ -24,3 +24,6 @@ Each trait in a cell contributes to its appearance, making the specialization of
 
 Traits of base cell:
 ![](./assets/traits.png)
+
+## Approximate appearance:
+![](./assets/cell.png)

@@ -104,7 +104,7 @@ impl Render for Grid {
 
             gl::UseProgram(self.render_data.program.id());
             gl::Uniform2f(
-                get_location(&self.render_data.program, "resolution"),
+                get_location(&self.render_data.program, "u_resolution"),
                 size_viewport[2] as f32,
                 size_viewport[3] as f32,
             );
@@ -128,7 +128,7 @@ impl Render for Grid {
                     gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
                     gl::Uniform1i(
-                        get_location(&self.render_data.program, "is_empty"),
+                        get_location(&self.render_data.program, "u_is_empty"),
                         self.get(x, y).is_empty() as _,
                     );
                     gl::DrawArrays(gl::LINE_LOOP, 0, 4);

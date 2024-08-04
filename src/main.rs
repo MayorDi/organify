@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use glfw::Context;
 use nalgebra::Vector2;
-use organify::{grid::Grid, traits::Render, world::World};
+use organify::{cell::Cell, grid::Grid, traits::Render, world::World};
 
 use egui::{vec2, Pos2, Rect};
 use egui_glfw as egui_backend;
@@ -61,6 +61,11 @@ fn main() {
         ..Default::default()
     });
 
+    let mut time = 0.0;
+
+    let cell = Cell::new(Vector2::new(50.0, 50.0));
+    let rd_cells = Cell::render_init();
+
     let mut world = World::new(Vector2::new(0.0, 0.0));
     world.render_init();
 
@@ -80,6 +85,7 @@ fn main() {
             gl::ClearColor(0.1, 0.1, 0.1, 1.0);
 
             world.render();
+            cell.render(&rd_cells, time);
         }
 
         egui::Window::new("Egui in Organify").show(&egui_ctx, |ui| {
@@ -114,6 +120,7 @@ fn main() {
             }
         }
         window.swap_buffers();
+        time += 0.05;
     }
     #[cfg(feature = "log")]
     log::info!("End the main loop");

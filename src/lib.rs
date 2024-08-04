@@ -1,3 +1,4 @@
+pub mod cell;
 pub mod consts;
 pub mod grid;
 pub mod opengl;
