@@ -1,10 +1,10 @@
-use std::{cell::RefCell, rc::Rc, time::Instant};
+use std::{cell::RefCell, rc::Rc};
 
 use glfw::Context;
 use nalgebra::Vector2;
 use organify::{grid::Grid, traits::Render, world::World};
 
-use egui::{vec2, Color32, Image, Pos2, Rect};
+use egui::{vec2, Pos2, Rect};
 use egui_glfw as egui_backend;
 
 fn main() {
@@ -57,11 +57,9 @@ fn main() {
             Pos2::new(0f32, 0f32),
             vec2(width as f32, height as f32) / native_pixels_per_point,
         )),
-        
+
         ..Default::default()
     });
-
-    // egui_input_state.input.time = Some(0.01);
 
     let mut world = World::new(Vector2::new(0.0, 0.0));
     world.render_init();
@@ -76,7 +74,7 @@ fn main() {
     while !window.should_close() {
         glfw.poll_events();
         egui_ctx.begin_frame(egui_input_state.input.take());
-        
+
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl::ClearColor(0.1, 0.1, 0.1, 1.0);
@@ -84,15 +82,16 @@ fn main() {
             world.render();
         }
 
-        egui::Window::new("Egui in Organify").show(&egui_ctx, |ui|{
+        egui::Window::new("Egui in Organify").show(&egui_ctx, |ui| {
             ui.label("Hello Organify");
         });
-        
 
         let egui::FullOutput {
             platform_output,
             textures_delta,
-            shapes, .. } = egui_ctx.end_frame();
+            shapes,
+            ..
+        } = egui_ctx.end_frame();
 
         //Handle cut, copy text from egui
         if !platform_output.copied_text.is_empty() {
@@ -100,7 +99,11 @@ fn main() {
         }
 
         let clipped_shapes = egui_ctx.tessellate(shapes, native_pixels_per_point);
-        (*painter).borrow_mut().paint_and_update_textures(native_pixels_per_point, &clipped_shapes, &textures_delta);
+        (*painter).borrow_mut().paint_and_update_textures(
+            native_pixels_per_point,
+            &clipped_shapes,
+            &textures_delta,
+        );
 
         for (_, event) in glfw::flush_messages(&events) {
             match event {
