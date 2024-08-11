@@ -1,11 +1,19 @@
-use std::{cell::RefCell, rc::Rc};
+use core::hash;
+use std::{borrow::BorrowMut, cell::RefCell, hash::BuildHasher, marker::PhantomData, rc::Rc};
 
-use glfw::Context;
-use nalgebra::Vector2;
-use organify::{cell::Cell, grid::Grid, traits::Render, world::World};
+use glfw::{Action, Context, Key};
+use nalgebra::{SimdBool, Vector2};
+use organify::{
+    cell::Cell,
+    control::{Camera, Mouse},
+    grid::Grid,
+    traits::Render,
+    world::World,
+};
 
 use egui::{vec2, Pos2, Rect};
 use egui_glfw as egui_backend;
+use sha2::{Digest, Sha256};
 
 fn main() {
     let mut glfw = glfw::init(glfw::fail_on_errors).unwrap();
@@ -63,11 +71,15 @@ fn main() {
 
     let mut time = 0.0;
 
+    let camera = Rc::new(RefCell::new(Camera::default()));
+    let mut mouse = Mouse::default();
+
     let cell = Cell::new(Vector2::new(50.0, 50.0));
-    let rd_cells = Cell::render_init();
+    let rd_cells = Cell::render_init(Some(Rc::clone(&camera)));
 
     let mut world = World::new(Vector2::new(0.0, 0.0));
     world.render_init();
+    world.render_data.camera = Some(Rc::clone(&camera));
 
     unsafe {
         gl::Enable(gl::BLEND);
@@ -88,35 +100,56 @@ fn main() {
             cell.render(&rd_cells, time);
         }
 
-        egui::Window::new("Egui in Organify").show(&egui_ctx, |ui| {
-            ui.label("Hello Organify");
-        });
+        let camera = &mut *(*camera).borrow_mut();
 
-        let egui::FullOutput {
-            platform_output,
-            textures_delta,
-            shapes,
-            ..
-        } = egui_ctx.end_frame();
-
-        //Handle cut, copy text from egui
-        if !platform_output.copied_text.is_empty() {
-            egui_backend::copy_to_clipboard(&mut egui_input_state, platform_output.copied_text);
-        }
-
-        let clipped_shapes = egui_ctx.tessellate(shapes, native_pixels_per_point);
-        (*painter).borrow_mut().paint_and_update_textures(
+        ui_render(
+            &egui_ctx,
+            time,
+            camera,
+            &world,
+            painter.clone(),
+            &mut egui_input_state,
             native_pixels_per_point,
-            &clipped_shapes,
-            &textures_delta,
         );
 
         for (_, event) in glfw::flush_messages(&events) {
+            egui_backend::handle_event(event.clone(), &mut egui_input_state);
+
             match event {
-                glfw::WindowEvent::Close => window.set_should_close(true),
-                _ => {
-                    egui_backend::handle_event(event, &mut egui_input_state);
+                glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+                    window.set_should_close(true);
                 }
+
+                glfw::WindowEvent::MouseButton(button, action, _) => {
+                    mouse.button = button;
+
+                    match action {
+                        Action::Press => mouse.pressed = true,
+                        _ => mouse.pressed = false,
+                    }
+                }
+
+                glfw::WindowEvent::Scroll(_, y) => {
+                    if (camera.scale + y as f32) > 0.0 {
+                        camera.scale += y as f32;
+                    }
+                }
+
+                glfw::WindowEvent::CursorPos(x, y) => {
+                    mouse.old_position = mouse.position;
+                    mouse.position = Vector2::new(x as f32, y as f32);
+
+                    if mouse.pressed {
+                        match mouse.button {
+                            glfw::MouseButton::Button1 => {
+                                camera.position += mouse.delta() / camera.scale
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                glfw::WindowEvent::Close => window.set_should_close(true),
+                _ => {}
             }
         }
         window.swap_buffers();
@@ -124,4 +157,54 @@ fn main() {
     }
     #[cfg(feature = "log")]
     log::info!("End the main loop");
+}
+
+fn ui_render(
+    egui_ctx: &egui::Context,
+    time: f32,
+    camera: &Camera,
+    world: &World,
+    painter: Rc<RefCell<egui_backend::Painter>>,
+    egui_input_state: &mut egui_glfw::EguiInputState,
+    native_pixels_per_point: f32,
+) {
+    egui::Window::new("Info").show(&egui_ctx, |ui| {
+        ui.label(format!("Time: {:.2}", time).as_str());
+        ui.label(
+            format!(
+                "Camera position: (x: {:.2}, y: {:.2})",
+                camera.position.x, camera.position.y
+            )
+            .as_str(),
+        );
+        ui.label(format!("Camera scale: {:.1}", camera.scale).as_str());
+        ui.separator();
+        ui.label(
+            format!(
+                "World position: (x: {:.2}, y: {:.2})",
+                world.position.x, world.position.y
+            )
+            .as_str(),
+        );
+        ui.label(format!("World radius: {:.2}", world.radius).as_str());
+    });
+
+    let egui::FullOutput {
+        platform_output,
+        textures_delta,
+        shapes,
+        ..
+    } = egui_ctx.end_frame();
+
+    //Handle cut, copy text from egui
+    if !platform_output.copied_text.is_empty() {
+        egui_backend::copy_to_clipboard(egui_input_state, platform_output.copied_text);
+    }
+
+    let clipped_shapes = egui_ctx.tessellate(shapes, native_pixels_per_point);
+    (*painter).borrow_mut().paint_and_update_textures(
+        native_pixels_per_point,
+        &clipped_shapes,
+        &textures_delta,
+    );
 }

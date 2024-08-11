@@ -5,3 +5,4 @@ pub mod opengl;
 pub mod render_data;
 pub mod traits;
 pub mod world;
+pub mod control;

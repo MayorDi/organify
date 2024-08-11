@@ -1,11 +1,9 @@
-use std::mem::size_of;
+use std::{cell::RefCell, mem::size_of, rc::Rc};
 
 use nalgebra::Vector2;
 
 use crate::{
-    opengl::prelude::{get_location, Build, GetId, Program, Shader},
-    render_data::RenderData,
-    traits::Behavior,
+    control::Camera, opengl::prelude::{get_location, Build, GetId, Program, Shader}, render_data::RenderData, traits::Behavior
 };
 
 #[derive(Debug, Clone, Default)]
@@ -32,7 +30,7 @@ impl Behavior for Cell {
 }
 
 impl Cell {
-    pub fn render_init() -> RenderData {
+    pub fn render_init(camera: Option<Rc<RefCell<Camera>>>) -> RenderData {
         let mut vao @ mut vbo @ mut ebo = 0;
         let idxs = [0u8, 1, 2, 1, 2, 3];
 
@@ -87,10 +85,12 @@ impl Cell {
             vao,
             vbo,
             program: create_program_shader_cells(),
+            camera,
         }
     }
 
     pub fn render(&self, render_data: &RenderData, time: f32) {
+        let camera = render_data.camera.as_ref().unwrap();
         let vertex_data = [
             self.position.x - self.radius,
             self.position.y - self.radius,
@@ -122,6 +122,24 @@ impl Cell {
             );
             // gl::Uniform1f(get_location(&render_data.program, "u_radius"), self.radius);
             gl::Uniform1f(get_location(&render_data.program, "u_time"), time);
+
+            gl::Uniform2fv(
+                get_location(&render_data.program, "u_camera.position"),
+                1,
+                [
+                    camera.borrow().position.x,
+                    camera.borrow().position.y,
+                ].as_ptr() as _
+            );
+
+            gl::Uniform1fv(
+                get_location(&render_data.program, "u_camera.scale"),
+                1,
+                [
+                    camera.borrow().scale,
+                ].as_ptr() as _
+            );
+
             gl::BindVertexArray(render_data.vao);
             gl::BindBuffer(gl::ARRAY_BUFFER, render_data.vbo);
             gl::BufferSubData(

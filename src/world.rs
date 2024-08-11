@@ -13,7 +13,7 @@ use crate::{
 pub struct World {
     pub position: Vector2<f32>,
     pub radius: f32,
-    render_data: RenderData,
+    pub render_data: RenderData,
 }
 
 impl World {
@@ -81,6 +81,8 @@ impl Render for World {
     }
 
     fn render(&self) {
+        let camera = self.render_data.camera.as_ref().unwrap();
+
         unsafe {
             let mut size_viewport = [0, 0, 0, 0];
             gl::GetIntegerv(gl::VIEWPORT, &mut size_viewport[0]);
@@ -95,6 +97,24 @@ impl Render for World {
                 get_location(&self.render_data.program, "u_radius"),
                 self.radius,
             );
+
+            gl::Uniform2fv(
+                get_location(&self.render_data.program, "u_camera.position"),
+                1,
+                [
+                    camera.borrow().position.x,
+                    camera.borrow().position.y,
+                ].as_ptr() as _
+            );
+
+            gl::Uniform1fv(
+                get_location(&self.render_data.program, "u_camera.scale"),
+                1,
+                [
+                    camera.borrow().scale,
+                ].as_ptr() as _
+            );
+
             gl::BindVertexArray(self.render_data.vao);
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_BYTE, std::ptr::null());
             gl::BindVertexArray(0);
