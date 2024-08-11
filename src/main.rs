@@ -1,8 +1,7 @@
-use core::hash;
-use std::{borrow::BorrowMut, cell::RefCell, hash::BuildHasher, marker::PhantomData, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use glfw::{Action, Context, Key};
-use nalgebra::{SimdBool, Vector2};
+use nalgebra::Vector2;
 use organify::{
     cell::Cell,
     control::{Camera, Mouse},
@@ -13,7 +12,6 @@ use organify::{
 
 use egui::{vec2, Pos2, Rect};
 use egui_glfw as egui_backend;
-use sha2::{Digest, Sha256};
 
 fn main() {
     let mut glfw = glfw::init(glfw::fail_on_errors).unwrap();
