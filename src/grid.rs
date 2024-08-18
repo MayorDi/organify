@@ -55,7 +55,11 @@ impl Grid {
     }
 
     pub fn clear(&mut self) {
-        self.cells = vec![vec![vec![]; SIZE_GRID[1]]; SIZE_GRID[0]];
+        for x in 0..self.cells.len() {
+            for y in 0..self.cells[x].len() {
+                self.cells[x][y].clear();
+            }
+        }
     }
 
     pub fn push_idx(&mut self, idx: Index, x: usize, y: usize) {
