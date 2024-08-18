@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use glfw::{Action, Context, Key};
+use glfw::{Action, Context, Key, MouseButton};
 use nalgebra::Vector2;
 use organify::{
     cell::Cell,
@@ -72,7 +72,7 @@ fn main() {
     let camera = Rc::new(RefCell::new(Camera::default()));
     let mut mouse = Mouse::default();
 
-    let cell = Cell::new(Vector2::new(50.0, 50.0));
+    let mut cells = vec![Cell::new(Vector2::new(50.0, 50.0))];
     let rd_cells = Cell::render_init(Some(Rc::clone(&camera)));
 
     let mut world = World::new(Vector2::new(0.0, 0.0));
@@ -95,7 +95,9 @@ fn main() {
             gl::ClearColor(0.1, 0.1, 0.1, 1.0);
 
             world.render();
-            cell.render(&rd_cells, time);
+            for cell in cells.iter() {
+                cell.render(&rd_cells, time);
+            }
         }
 
         let camera = &mut *(*camera).borrow_mut();
@@ -106,6 +108,7 @@ fn main() {
             camera,
             &mouse,
             &world,
+            &cells,
             painter.clone(),
             &mut egui_input_state,
             native_pixels_per_point,
@@ -126,6 +129,13 @@ fn main() {
                     match action {
                         Action::Press => mouse.pressed = true,
                         _ => mouse.pressed = false,
+                    }
+
+                    match mouse.button {
+                        MouseButton::Button2 if mouse.pressed => {
+                            cells.push(Cell::new(mouse.world_position));
+                        }
+                        _ => {}
                     }
                 }
 
@@ -165,12 +175,15 @@ fn ui_render(
     camera: &Camera,
     mouse: &Mouse,
     world: &World,
+    cells: &Vec<Cell>,
+
     painter: Rc<RefCell<egui_backend::Painter>>,
     egui_input_state: &mut egui_glfw::EguiInputState,
     native_pixels_per_point: f32,
 ) {
     egui::Window::new("Info").show(&egui_ctx, |ui| {
         ui.label(format!("Time: {:.2}", time).as_str());
+        ui.label(format!("Cout cells: {}", cells.len()).as_str());
         ui.label(
             format!(
                 "Mouse world position: (x: {:.2}, y: {:.2})",
