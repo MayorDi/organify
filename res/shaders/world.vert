@@ -21,7 +21,7 @@ void main(void) {
         1.0,            0.0,            0.0, 0.0,
         0.0,            1.0,            0.0, 0.0,
         0.0,            0.0,            1.0, 0.0,
-        n_cam_pos.x,    -n_cam_pos.y,   0.0, 1.0
+        -n_cam_pos.x,    -n_cam_pos.y,   0.0, 1.0
     );
 
     mat4 scale_matrix = mat4(

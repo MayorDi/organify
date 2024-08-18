@@ -104,6 +104,7 @@ fn main() {
             &egui_ctx,
             time,
             camera,
+            &mouse,
             &world,
             painter.clone(),
             &mut egui_input_state,
@@ -113,6 +114,7 @@ fn main() {
         for (_, event) in glfw::flush_messages(&events) {
             egui_backend::handle_event(event.clone(), &mut egui_input_state);
 
+            mouse.update_world_position(window.get_size(), &camera);
             match event {
                 glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                     window.set_should_close(true);
@@ -140,7 +142,7 @@ fn main() {
                     if mouse.pressed {
                         match mouse.button {
                             glfw::MouseButton::Button1 => {
-                                camera.position += mouse.delta() / camera.scale
+                                camera.position += Vector2::new(-mouse.delta().x, mouse.delta().y) / camera.scale
                             }
                             _ => {}
                         }
@@ -161,6 +163,7 @@ fn ui_render(
     egui_ctx: &egui::Context,
     time: f32,
     camera: &Camera,
+    mouse: &Mouse,
     world: &World,
     painter: Rc<RefCell<egui_backend::Painter>>,
     egui_input_state: &mut egui_glfw::EguiInputState,
@@ -168,6 +171,13 @@ fn ui_render(
 ) {
     egui::Window::new("Info").show(&egui_ctx, |ui| {
         ui.label(format!("Time: {:.2}", time).as_str());
+        ui.label(
+            format!(
+                "Mouse world position: (x: {:.2}, y: {:.2})",
+                mouse.world_position.x, mouse.world_position.y
+            )
+            .as_str(),
+        );
         ui.label(
             format!(
                 "Camera position: (x: {:.2}, y: {:.2})",
