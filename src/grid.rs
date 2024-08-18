@@ -3,7 +3,11 @@ use nalgebra::Vector2;
 #[cfg(feature = "debug")]
 use std::mem::size_of;
 
-use crate::consts::SIZE_GRID;
+use crate::{
+    cell::Cell,
+    consts::{RADIUS_WORLD, SIZE_GRID},
+    control::Camera,
+};
 
 #[cfg(feature = "debug")]
 use crate::{
@@ -20,7 +24,7 @@ pub struct Grid {
     cells: Vec<Vec<Vec<Index>>>,
 
     #[cfg(feature = "debug")]
-    render_data: RenderData,
+    pub render_data: RenderData,
     #[cfg(feature = "debug")]
     world_position: Vector2<f32>,
     #[cfg(feature = "debug")]
@@ -32,8 +36,6 @@ impl Grid {
     pub fn new() -> Self {
         Self {
             cells: vec![vec![vec![]; SIZE_GRID[1]]; SIZE_GRID[0]],
-            #[cfg(feature = "debug")]
-            render_data: RenderData::default(),
         }
     }
 
@@ -53,17 +55,83 @@ impl Grid {
     }
 
     pub fn clear(&mut self) {
-        for x in 0..SIZE_GRID[0] {
-            for y in 0..SIZE_GRID[1] {
-                if !self.cells[x][y].is_empty() {
-                    self.cells[x][y].clear();
+        self.cells = vec![vec![vec![]; SIZE_GRID[1]]; SIZE_GRID[0]];
+    }
+
+    pub fn push_idx(&mut self, idx: Index, x: usize, y: usize) {
+        self.cells[x][y].push(idx);
+    }
+
+    pub fn update_cells(&mut self, cells: &Vec<Cell>) {
+        self.clear();
+
+        for (idx, cell) in cells.iter().enumerate() {
+            self.push_idx(
+                idx,
+                (50.0 + cell.position.x / 10.0) as usize,
+                (50.0 + cell.position.y / 10.0) as usize,
+            );
+        }
+    }
+
+    pub fn find_collisions_grid(&self, cells: &mut Vec<Cell>) {
+        for x in 1..(SIZE_GRID[0] - 1) {
+            for y in 1..(SIZE_GRID[1] - 1) {
+                let current_cell_grid = self.get(x, y);
+                if current_cell_grid.is_empty() {
+                    continue;
+                }
+
+                for dx in -1..=1 {
+                    for dy in -1..=1 {
+                        let other_cell_grid =
+                            self.get((x as i32 + dx) as usize, (y as i32 + dy) as usize);
+
+                        self.check_cells_collisions(current_cell_grid, other_cell_grid, cells);
+                    }
                 }
             }
         }
     }
 
-    pub fn push_idx(&mut self, idx: Index, x: usize, y: usize) {
-        self.cells[x][y].push(idx);
+    pub fn check_cells_collisions(
+        &self,
+        idxs_cells1: &Vec<usize>,
+        idxs_cells2: &Vec<usize>,
+        cells: &mut Vec<Cell>,
+    ) {
+        if idxs_cells1.is_empty() && idxs_cells2.is_empty() {
+            return;
+        }
+
+        for idx1 in idxs_cells1.iter() {
+            for idx2 in idxs_cells2.iter() {
+                if *idx1 != *idx2 && Self::collide(*idx1, *idx2, cells) {
+                    Self::solve_collide(*idx1, *idx2, cells);
+                }
+            }
+        }
+    }
+
+    pub fn collide(idx1: usize, idx2: usize, cells: &Vec<Cell>) -> bool {
+        let cell1 = &cells[idx1];
+        let cell2 = &cells[idx2];
+
+        let dist = cell2.position - cell1.position;
+        let r = (dist.x.powf(2.0) + dist.y.powf(2.0)).sqrt();
+
+        r <= 10.0
+    }
+
+    pub fn solve_collide(idx1: usize, idx2: usize, cells: &mut Vec<Cell>) {
+        let cell1 = &cells[idx1];
+        let cell2 = &cells[idx2];
+
+        let dist = cell2.position - cell1.position;
+        let r = (dist.x.powf(2.0) + dist.y.powf(2.0)).sqrt();
+
+        cells[idx1].velocity -= dist / (r * r * r);
+        cells[idx2].velocity += dist / (r * r * r);
     }
 }
 
@@ -97,6 +165,7 @@ impl Render for Grid {
     }
 
     fn render(&self) {
+        let camera = self.render_data.camera.as_ref().unwrap();
         let start_point = self.world_position.x - self.world_radius;
         unsafe {
             let mut size_viewport = [0, 0, 0, 0];
@@ -130,6 +199,17 @@ impl Render for Grid {
                     gl::Uniform1i(
                         get_location(&self.render_data.program, "u_is_empty"),
                         self.get(x, y).is_empty() as _,
+                    );
+                    gl::Uniform2fv(
+                        get_location(&self.render_data.program, "u_camera.position"),
+                        1,
+                        [camera.borrow().position.x, camera.borrow().position.y].as_ptr() as _,
+                    );
+
+                    gl::Uniform1fv(
+                        get_location(&self.render_data.program, "u_camera.scale"),
+                        1,
+                        [camera.borrow().scale].as_ptr() as _,
                     );
                     gl::DrawArrays(gl::LINE_LOOP, 0, 4);
                 }

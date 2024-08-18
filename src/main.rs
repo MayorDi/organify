@@ -6,7 +6,7 @@ use organify::{
     cell::Cell,
     control::{Camera, Mouse},
     grid::Grid,
-    traits::Render,
+    traits::{Behavior, Render},
     world::World,
 };
 
@@ -72,12 +72,25 @@ fn main() {
     let camera = Rc::new(RefCell::new(Camera::default()));
     let mut mouse = Mouse::default();
 
+    #[cfg(not(feature = "debug"))]
+    let mut grid = Grid::new();
+
     let mut cells = vec![Cell::new(Vector2::new(50.0, 50.0))];
     let rd_cells = Cell::render_init(Some(Rc::clone(&camera)));
 
     let mut world = World::new(Vector2::new(0.0, 0.0));
     world.render_init();
     world.render_data.camera = Some(Rc::clone(&camera));
+
+    #[cfg(feature = "debug")]
+    let mut grid = Grid::new(world.position, world.radius);
+
+    #[cfg(feature = "debug")]
+    grid.render_init();
+    #[cfg(feature = "debug")]
+    {
+        grid.render_data.camera = Some(Rc::clone(&camera));
+    }
 
     unsafe {
         gl::Enable(gl::BLEND);
@@ -90,11 +103,23 @@ fn main() {
         glfw.poll_events();
         egui_ctx.begin_frame(egui_input_state.input.take());
 
+        grid.update_cells(&cells);
+        grid.find_collisions_grid(&mut cells);
+
+        for cell in cells.iter_mut() {
+            cell.update();
+        }
+
+
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl::ClearColor(0.1, 0.1, 0.1, 1.0);
 
             world.render();
+
+            #[cfg(feature = "debug")]
+            grid.render();
+
             for cell in cells.iter() {
                 cell.render(&rd_cells, time);
             }
@@ -149,13 +174,12 @@ fn main() {
                     mouse.old_position = mouse.position;
                     mouse.position = Vector2::new(x as f32, y as f32);
 
-                    if mouse.pressed {
-                        match mouse.button {
-                            glfw::MouseButton::Button1 => {
-                                camera.position += Vector2::new(-mouse.delta().x, mouse.delta().y) / camera.scale
-                            }
-                            _ => {}
+                    match mouse.button {
+                        glfw::MouseButton::Button1 if mouse.pressed => {
+                            camera.position +=
+                                Vector2::new(-mouse.delta().x, mouse.delta().y) / camera.scale
                         }
+                        _ => {}
                     }
                 }
                 glfw::WindowEvent::Close => window.set_should_close(true),
@@ -183,7 +207,7 @@ fn ui_render(
 ) {
     egui::Window::new("Info").show(&egui_ctx, |ui| {
         ui.label(format!("Time: {:.2}", time).as_str());
-        ui.label(format!("Cout cells: {}", cells.len()).as_str());
+        ui.label(format!("Count cells: {}", cells.len()).as_str());
         ui.label(
             format!(
                 "Mouse world position: (x: {:.2}, y: {:.2})",

@@ -19,14 +19,18 @@ impl Cell {
     pub fn new(position: Vector2<f32>) -> Self {
         Self {
             position,
-            radius: 4.0,
+            radius: 5.0,
+            mass: 4.7,
             ..Default::default()
         }
     }
 }
 
 impl Behavior for Cell {
-    fn update(&mut self) {}
+    fn update(&mut self) {
+        self.position += self.velocity;
+        self.velocity *= 0.9;
+    }
 }
 
 impl Cell {
