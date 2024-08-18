@@ -101,18 +101,13 @@ impl Render for World {
             gl::Uniform2fv(
                 get_location(&self.render_data.program, "u_camera.position"),
                 1,
-                [
-                    camera.borrow().position.x,
-                    camera.borrow().position.y,
-                ].as_ptr() as _
+                [camera.borrow().position.x, camera.borrow().position.y].as_ptr() as _,
             );
 
             gl::Uniform1fv(
                 get_location(&self.render_data.program, "u_camera.scale"),
                 1,
-                [
-                    camera.borrow().scale,
-                ].as_ptr() as _
+                [camera.borrow().scale].as_ptr() as _,
             );
 
             gl::BindVertexArray(self.render_data.vao);

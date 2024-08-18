@@ -3,7 +3,10 @@ use std::{cell::RefCell, mem::size_of, rc::Rc};
 use nalgebra::Vector2;
 
 use crate::{
-    control::Camera, opengl::prelude::{get_location, Build, GetId, Program, Shader}, render_data::RenderData, traits::Behavior
+    control::Camera,
+    opengl::prelude::{get_location, Build, GetId, Program, Shader},
+    render_data::RenderData,
+    traits::Behavior,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -130,18 +133,13 @@ impl Cell {
             gl::Uniform2fv(
                 get_location(&render_data.program, "u_camera.position"),
                 1,
-                [
-                    camera.borrow().position.x,
-                    camera.borrow().position.y,
-                ].as_ptr() as _
+                [camera.borrow().position.x, camera.borrow().position.y].as_ptr() as _,
             );
 
             gl::Uniform1fv(
                 get_location(&render_data.program, "u_camera.scale"),
                 1,
-                [
-                    camera.borrow().scale,
-                ].as_ptr() as _
+                [camera.borrow().scale].as_ptr() as _,
             );
 
             gl::BindVertexArray(render_data.vao);

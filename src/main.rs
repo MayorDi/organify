@@ -110,7 +110,6 @@ fn main() {
             cell.update();
         }
 
-
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl::ClearColor(0.1, 0.1, 0.1, 1.0);
