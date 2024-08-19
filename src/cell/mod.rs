@@ -77,6 +77,10 @@ impl Cell {
                 cell.position.y + cell.radius,
                 0.0,
                 1.0,
+                cell.position.x + cell.radius,
+                cell.position.y - cell.radius,
+                1.0,
+                0.0,
                 cell.position.x - cell.radius,
                 cell.position.y + cell.radius,
                 0.0,
@@ -85,10 +89,6 @@ impl Cell {
                 cell.position.y + cell.radius,
                 1.0,
                 1.0,
-                cell.position.x + cell.radius,
-                cell.position.y - cell.radius,
-                1.0,
-                0.0,
             ]);
         }
 
@@ -127,8 +127,6 @@ impl Cell {
             );
             gl::EnableVertexAttribArray(1);
 
-
-
             gl::Uniform2f(
                 get_location(&render_data.program, "u_resolution"),
                 size_viewport[2] as f32,
@@ -148,8 +146,9 @@ impl Cell {
                 1,
                 [camera.borrow().scale].as_ptr() as _,
             );
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
-            gl::DrawArrays(gl::TRIANGLES, 0, vertex_data.len() as _);
+            gl::DrawArrays(gl::TRIANGLES, 0, (vertex_data.len()/4) as _);
             gl::BindVertexArray(0);
             gl::UseProgram(0);
         }

@@ -4,6 +4,7 @@ use nalgebra::Vector2;
 
 use crate::{
     consts::RADIUS_WORLD,
+    light::Light,
     opengl::prelude::{get_location, Build, GetId, Shader},
     render_data::RenderData,
     traits::Render,
@@ -13,6 +14,7 @@ use crate::{
 pub struct World {
     pub position: Vector2<f32>,
     pub radius: f32,
+    pub light: Light,
     pub render_data: RenderData,
 }
 
@@ -21,6 +23,7 @@ impl World {
         Self {
             position,
             radius: RADIUS_WORLD,
+            light: Light::new(position),
             render_data: RenderData::default(),
         }
     }
@@ -108,6 +111,24 @@ impl Render for World {
                 get_location(&self.render_data.program, "u_camera.scale"),
                 1,
                 [camera.borrow().scale].as_ptr() as _,
+            );
+
+            gl::Uniform2fv(
+                get_location(&self.render_data.program, "u_light.position"),
+                1,
+                [self.light.position.x, self.light.position.y].as_ptr() as _,
+            );
+
+            gl::Uniform1fv(
+                get_location(&self.render_data.program, "u_light.radius"),
+                1,
+                [self.light.radius].as_ptr() as _,
+            );
+
+            gl::Uniform1fv(
+                get_location(&self.render_data.program, "u_light.intensity"),
+                1,
+                [self.light.intensity].as_ptr() as _,
             );
 
             gl::BindVertexArray(self.render_data.vao);

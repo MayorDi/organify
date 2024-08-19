@@ -76,13 +76,13 @@ fn main() {
     #[cfg(not(feature = "debug"))]
     let mut grid = Grid::new();
 
-    let mut cells = vec![Cell::new(Vector2::new(50.0, 50.0))];
-    for _ in 0..10000 {
-        cells.push(Cell::new(Vector2::new(
-            rand::thread_rng().gen_range(-100.0..100.0),
-            rand::thread_rng().gen_range(-100.0..100.0),
-        )));
-    }
+    let mut cells = vec![];
+    // for _ in 0..1000 {
+    //     cells.push(Cell::new(Vector2::new(
+    //         rand::thread_rng().gen_range(-100.0..100.0),
+    //         rand::thread_rng().gen_range(-100.0..100.0),
+    //     )));
+    // }
     let rd_cells = Cell::render_init(Some(Rc::clone(&camera)));
 
     let mut world = World::new(Vector2::new(0.0, 0.0));
