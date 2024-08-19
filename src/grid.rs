@@ -71,11 +71,15 @@ impl Grid {
         self.clear();
 
         for (idx, cell) in cells.iter().enumerate() {
-            self.push_idx(
-                idx,
-                (50.0 + cell.position.x / 10.0) as usize,
-                (50.0 + cell.position.y / 10.0) as usize,
-            );
+            let r = (cell.position.x * cell.position.x + cell.position.y * cell.position.y).sqrt();
+
+            if r <= RADIUS_WORLD - (cell.radius * 2.0 + cell.radius) {
+                self.push_idx(
+                    idx,
+                    (50.0 + cell.position.x / 10.0) as usize,
+                    (50.0 + cell.position.y / 10.0) as usize,
+                );
+            }
         }
     }
 
@@ -135,7 +139,7 @@ impl Grid {
         let dist = cell2.position - cell1.position;
         let r = (dist.x * dist.x + dist.y * dist.y).sqrt();
 
-        cells[idx1].velocity -= dist / (r * r);
+        cells[idx1].velocity -= dist / (r*r);
     }
 }
 

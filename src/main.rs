@@ -12,6 +12,7 @@ use organify::{
 
 use egui::{vec2, Pos2, Rect};
 use egui_glfw as egui_backend;
+use rand::Rng;
 
 fn main() {
     let mut glfw = glfw::init(glfw::fail_on_errors).unwrap();

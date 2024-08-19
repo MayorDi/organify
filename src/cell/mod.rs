@@ -28,14 +28,14 @@ impl Cell {
 
 impl Behavior for Cell {
     fn update(&mut self) {
-        self.position += self.velocity;
-        self.velocity *= 0.9;
-
         let r = (self.position.x * self.position.x + self.position.y * self.position.y).sqrt();
 
         if r >= RADIUS_WORLD - (self.radius*2.0 + self.radius) {
-            self.velocity -= self.position / r;
+            self.velocity -= self.position / (r);
         }
+
+        self.position += self.velocity;
+        self.velocity *= 0.9;
     }
 }
 
