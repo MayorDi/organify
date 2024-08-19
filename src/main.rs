@@ -77,6 +77,12 @@ fn main() {
     let mut grid = Grid::new();
 
     let mut cells = vec![Cell::new(Vector2::new(50.0, 50.0))];
+    for _ in 0..10000 {
+        cells.push(Cell::new(Vector2::new(
+            rand::thread_rng().gen_range(-100.0..100.0),
+            rand::thread_rng().gen_range(-100.0..100.0),
+        )));
+    }
     let rd_cells = Cell::render_init(Some(Rc::clone(&camera)));
 
     let mut world = World::new(Vector2::new(0.0, 0.0));
@@ -120,9 +126,7 @@ fn main() {
             #[cfg(feature = "debug")]
             grid.render();
 
-            for cell in cells.iter() {
-                cell.render(&rd_cells, time);
-            }
+            Cell::render(&cells, &rd_cells, time);
         }
 
         let camera = &mut *(*camera).borrow_mut();

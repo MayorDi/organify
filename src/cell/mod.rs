@@ -3,7 +3,11 @@ use std::{cell::RefCell, mem::size_of, rc::Rc};
 use nalgebra::Vector2;
 
 use crate::{
-    consts::RADIUS_WORLD, control::Camera, opengl::prelude::{get_location, Build, GetId, Program, Shader}, render_data::RenderData, traits::Behavior
+    consts::RADIUS_WORLD,
+    control::Camera,
+    opengl::prelude::{get_location, Build, GetId, Program, Shader},
+    render_data::RenderData,
+    traits::Behavior,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -30,7 +34,7 @@ impl Behavior for Cell {
     fn update(&mut self) {
         let r = (self.position.x * self.position.x + self.position.y * self.position.y).sqrt();
 
-        if r >= RADIUS_WORLD - (self.radius*2.0 + self.radius) {
+        if r >= RADIUS_WORLD - (self.radius * 2.0 + self.radius) {
             self.velocity -= self.position / (r);
         }
 
@@ -41,28 +45,65 @@ impl Behavior for Cell {
 
 impl Cell {
     pub fn render_init(camera: Option<Rc<RefCell<Camera>>>) -> RenderData {
-        let mut vao @ mut vbo @ mut ebo = 0;
-        let idxs = [0u8, 1, 2, 1, 2, 3];
-
+        let mut vao @ mut vbo = 0;
         unsafe {
             gl::GenVertexArrays(1, &mut vao);
             gl::GenBuffers(1, &mut vbo);
-            gl::GenBuffers(1, &mut ebo);
+        }
 
-            gl::BindVertexArray(vao);
-            gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        RenderData {
+            vao,
+            vbo,
+            program: create_program_shader_cells(),
+            camera,
+        }
+    }
+
+    pub fn render(cells: &Vec<Cell>, render_data: &RenderData, time: f32) {
+        let camera = render_data.camera.as_ref().unwrap();
+        let mut vertex_data = vec![];
+
+        for cell in cells {
+            vertex_data.extend([
+                cell.position.x - cell.radius,
+                cell.position.y - cell.radius,
+                0.0,
+                0.0,
+                cell.position.x + cell.radius,
+                cell.position.y - cell.radius,
+                1.0,
+                0.0,
+                cell.position.x - cell.radius,
+                cell.position.y + cell.radius,
+                0.0,
+                1.0,
+                cell.position.x - cell.radius,
+                cell.position.y + cell.radius,
+                0.0,
+                1.0,
+                cell.position.x + cell.radius,
+                cell.position.y + cell.radius,
+                1.0,
+                1.0,
+                cell.position.x + cell.radius,
+                cell.position.y - cell.radius,
+                1.0,
+                0.0,
+            ]);
+        }
+
+        unsafe {
+            let mut size_viewport = [0, 0, 0, 0];
+            gl::GetIntegerv(gl::VIEWPORT, &mut size_viewport[0]);
+
+            gl::UseProgram(render_data.program.id());
+            
+            gl::BindVertexArray(render_data.vao);
+            gl::BindBuffer(gl::ARRAY_BUFFER, render_data.vbo);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                (4 * 4 * size_of::<f32>()) as isize,
-                std::ptr::null(),
-                gl::DYNAMIC_DRAW,
-            );
-
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-            gl::BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                idxs.len() as isize,
-                idxs.as_ptr() as _,
+                (vertex_data.len() * size_of::<f32>()) as isize,
+                vertex_data.as_ptr() as _,
                 gl::DYNAMIC_DRAW,
             );
 
@@ -86,45 +127,8 @@ impl Cell {
             );
             gl::EnableVertexAttribArray(1);
 
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::BindVertexArray(0);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-        }
 
-        RenderData {
-            vao,
-            vbo,
-            program: create_program_shader_cells(),
-            camera,
-        }
-    }
 
-    pub fn render(&self, render_data: &RenderData, time: f32) {
-        let camera = render_data.camera.as_ref().unwrap();
-        let vertex_data = [
-            self.position.x - self.radius,
-            self.position.y - self.radius,
-            0.0,
-            0.0,
-            self.position.x + self.radius,
-            self.position.y - self.radius,
-            1.0,
-            0.0,
-            self.position.x - self.radius,
-            self.position.y + self.radius,
-            0.0,
-            1.0,
-            self.position.x + self.radius,
-            self.position.y + self.radius,
-            1.0,
-            1.0,
-        ];
-
-        unsafe {
-            let mut size_viewport = [0, 0, 0, 0];
-            gl::GetIntegerv(gl::VIEWPORT, &mut size_viewport[0]);
-
-            gl::UseProgram(render_data.program.id());
             gl::Uniform2f(
                 get_location(&render_data.program, "u_resolution"),
                 size_viewport[2] as f32,
@@ -145,17 +149,7 @@ impl Cell {
                 [camera.borrow().scale].as_ptr() as _,
             );
 
-            gl::BindVertexArray(render_data.vao);
-            gl::BindBuffer(gl::ARRAY_BUFFER, render_data.vbo);
-            gl::BufferSubData(
-                gl::ARRAY_BUFFER,
-                0,
-                (4 * 4 * size_of::<f32>()) as isize,
-                vertex_data.as_ptr() as _,
-            );
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-
-            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_BYTE, std::ptr::null());
+            gl::DrawArrays(gl::TRIANGLES, 0, vertex_data.len() as _);
             gl::BindVertexArray(0);
             gl::UseProgram(0);
         }
