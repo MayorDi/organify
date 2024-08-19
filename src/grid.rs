@@ -1,3 +1,4 @@
+use nalgebra::Vector2;
 #[cfg(feature = "debug")]
 use nalgebra::Vector2;
 #[cfg(feature = "debug")]
@@ -22,7 +23,7 @@ pub type Index = usize;
 #[derive(Debug)]
 pub struct Grid {
     cells: Vec<Vec<Vec<Index>>>,
-
+    cells_used: Vec<(usize, usize)>,
     #[cfg(feature = "debug")]
     pub render_data: RenderData,
     #[cfg(feature = "debug")]
@@ -36,6 +37,7 @@ impl Grid {
     pub fn new() -> Self {
         Self {
             cells: vec![vec![vec![]; SIZE_GRID[1]]; SIZE_GRID[0]],
+            cells_used: vec![],
         }
     }
 
@@ -55,15 +57,14 @@ impl Grid {
     }
 
     pub fn clear(&mut self) {
-        for x in 0..self.cells.len() {
-            for y in 0..self.cells[x].len() {
-                self.cells[x][y].clear();
-            }
+        for idx in self.cells_used.iter() {
+            self.cells[idx.0][idx.1].clear();
         }
     }
 
     pub fn push_idx(&mut self, idx: Index, x: usize, y: usize) {
         self.cells[x][y].push(idx);
+        self.cells_used.push((x, y));
     }
 
     pub fn update_cells(&mut self, cells: &Vec<Cell>) {
@@ -122,7 +123,7 @@ impl Grid {
         let cell2 = &cells[idx2];
 
         let dist = cell2.position - cell1.position;
-        let r = (dist.x.powf(2.0) + dist.y.powf(2.0)).sqrt();
+        let r = (dist.x * dist.x + dist.y * dist.y).sqrt();
 
         r <= 10.0
     }
@@ -132,10 +133,9 @@ impl Grid {
         let cell2 = &cells[idx2];
 
         let dist = cell2.position - cell1.position;
-        let r = (dist.x.powf(2.0) + dist.y.powf(2.0)).sqrt();
+        let r = (dist.x * dist.x + dist.y * dist.y).sqrt();
 
-        cells[idx1].velocity -= dist / (r * r * r);
-        cells[idx2].velocity += dist / (r * r * r);
+        cells[idx1].velocity -= dist / (r * r);
     }
 }
 

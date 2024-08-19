@@ -3,10 +3,7 @@ use std::{cell::RefCell, mem::size_of, rc::Rc};
 use nalgebra::Vector2;
 
 use crate::{
-    control::Camera,
-    opengl::prelude::{get_location, Build, GetId, Program, Shader},
-    render_data::RenderData,
-    traits::Behavior,
+    consts::RADIUS_WORLD, control::Camera, opengl::prelude::{get_location, Build, GetId, Program, Shader}, render_data::RenderData, traits::Behavior
 };
 
 #[derive(Debug, Clone, Default)]
@@ -33,6 +30,12 @@ impl Behavior for Cell {
     fn update(&mut self) {
         self.position += self.velocity;
         self.velocity *= 0.9;
+
+        let r = (self.position.x * self.position.x + self.position.y * self.position.y).sqrt();
+
+        if r >= RADIUS_WORLD - (self.radius*2.0 + self.radius) {
+            self.velocity -= self.position / r;
+        }
     }
 }
 
