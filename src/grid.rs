@@ -1,14 +1,15 @@
 #[cfg(feature = "debug")]
 use nalgebra::Vector2;
-use nalgebra::{ComplexField, Vector2};
 #[cfg(feature = "debug")]
 use std::mem::size_of;
 
 use crate::{
     cell::Cell,
     consts::{RADIUS_WORLD, SIZE_GRID},
-    control::Camera,
 };
+
+#[cfg(feature = "debug")]
+use crate::control::Camera;
 
 #[cfg(feature = "debug")]
 use crate::{
@@ -140,8 +141,8 @@ impl Grid {
         let dist = cell2.position - cell1.position;
         let r = dist.x * dist.x + dist.y * dist.y;
 
-        let diam = cell1.radius*2.0;
-        r <= diam*diam
+        let diam = cell1.radius * 2.0;
+        r <= diam * diam
     }
 
     pub fn solve_collide(idx1: usize, idx2: usize, cells: &mut Vec<Cell>) {
@@ -151,8 +152,8 @@ impl Grid {
         let dist = cell2.position - cell1.position;
         let r = dist.x * dist.x + dist.y * dist.y;
 
-        let diam = cell1.radius*2.0;
-        let f = (diam*diam - r) / (diam*diam) * cell1.mass / (1.0 + r);
+        let diam = cell1.radius * 2.0;
+        let f = (diam * diam - r) / (diam * diam) * cell1.mass / (1.0 + r);
         cells[idx1].velocity -= dist * f;
     }
 
@@ -160,7 +161,7 @@ impl Grid {
         let cell = &cells[idx];
         let radius_world = RADIUS_WORLD - cell.radius * 3.0;
         let r = (cell.position.x * cell.position.x + cell.position.y * cell.position.y).sqrt();
-        let cof = radius_world/r;
+        let cof = radius_world / r;
         cells[idx].position *= cof;
     }
 }

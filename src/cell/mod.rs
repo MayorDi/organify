@@ -34,19 +34,23 @@ impl Cell {
 
 impl Behavior for Cell {
     fn update(&mut self) {
-        if !self.is_alive { return; }
-        
+        if !self.is_alive {
+            return;
+        }
+
         self.position += self.velocity;
         self.velocity *= 0.9;
     }
-    
+
     fn check_alive(&mut self) {
-        if !self.is_alive { return; }
+        if !self.is_alive {
+            return;
+        }
 
         let radius_world = RADIUS_WORLD - self.radius * 2.0;
         let radius_world = radius_world * radius_world;
         let len_dist_center_world =
-        self.position.x * self.position.x + self.position.y * self.position.y;
+            self.position.x * self.position.x + self.position.y * self.position.y;
 
         if len_dist_center_world > radius_world {
             self.is_alive = false;
@@ -108,7 +112,7 @@ impl Cell {
             gl::GetIntegerv(gl::VIEWPORT, &mut size_viewport[0]);
 
             gl::UseProgram(render_data.program.id());
-            
+
             gl::BindVertexArray(render_data.vao);
             gl::BindBuffer(gl::ARRAY_BUFFER, render_data.vbo);
             gl::BufferData(
@@ -159,7 +163,7 @@ impl Cell {
             );
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
-            gl::DrawArrays(gl::TRIANGLES, 0, (vertex_data.len()/4) as _);
+            gl::DrawArrays(gl::TRIANGLES, 0, (vertex_data.len() / 4) as _);
             gl::BindVertexArray(0);
             gl::UseProgram(0);
         }
