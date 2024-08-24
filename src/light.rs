@@ -12,7 +12,7 @@ impl Light {
         Self {
             position,
             radius: 400.0,
-            intensity: 1.0,
+            intensity: 0.0,
         }
     }
 }

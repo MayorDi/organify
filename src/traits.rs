@@ -7,4 +7,6 @@ pub trait Render {
 
 pub trait Behavior {
     fn update(&mut self);
+
+    fn check_alive(&mut self) {}
 }

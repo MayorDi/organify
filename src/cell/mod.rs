@@ -16,6 +16,7 @@ pub struct Cell {
     pub velocity: Vector2<f32>,
     pub mass: f32,
     pub radius: f32,
+    pub is_alive: bool,
     pub direction: Vector2<f32>,
 }
 
@@ -25,6 +26,7 @@ impl Cell {
             position,
             radius: 5.0,
             mass: 4.7,
+            is_alive: true,
             ..Default::default()
         }
     }
@@ -32,14 +34,23 @@ impl Cell {
 
 impl Behavior for Cell {
     fn update(&mut self) {
-        let r = (self.position.x * self.position.x + self.position.y * self.position.y).sqrt();
-
-        if r >= RADIUS_WORLD - (self.radius * 2.0 + self.radius) {
-            self.velocity -= self.position / (r);
-        }
-
+        if !self.is_alive { return; }
+        
         self.position += self.velocity;
         self.velocity *= 0.9;
+    }
+    
+    fn check_alive(&mut self) {
+        if !self.is_alive { return; }
+
+        let radius_world = RADIUS_WORLD - self.radius * 2.0;
+        let radius_world = radius_world * radius_world;
+        let len_dist_center_world =
+        self.position.x * self.position.x + self.position.y * self.position.y;
+
+        if len_dist_center_world > radius_world {
+            self.is_alive = false;
+        }
     }
 }
 

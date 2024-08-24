@@ -77,12 +77,12 @@ fn main() {
     let mut grid = Grid::new();
 
     let mut cells = vec![];
-    // for _ in 0..1000 {
-    //     cells.push(Cell::new(Vector2::new(
-    //         rand::thread_rng().gen_range(-100.0..100.0),
-    //         rand::thread_rng().gen_range(-100.0..100.0),
-    //     )));
-    // }
+    for _ in 0..1000 {
+        cells.push(Cell::new(Vector2::new(
+            rand::thread_rng().gen_range(-100.0..100.0),
+            rand::thread_rng().gen_range(-100.0..100.0),
+        )));
+    }
     let rd_cells = Cell::render_init(Some(Rc::clone(&camera)));
 
     let mut world = World::new(Vector2::new(0.0, 0.0));
@@ -113,8 +113,21 @@ fn main() {
         grid.update_cells(&cells);
         grid.find_collisions_grid(&mut cells);
 
-        for cell in cells.iter_mut() {
-            cell.update();
+        {
+            let mut len = cells.len();
+            let mut i = 0;
+            while i < len {
+                cells[i].update();
+                cells[i].check_alive();
+
+                if !cells[i].is_alive {
+                    cells.remove(i);
+                    len -= 1;
+                    continue;
+                }
+
+                i += 1;
+            }
         }
 
         unsafe {

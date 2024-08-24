@@ -1,6 +1,6 @@
-use nalgebra::Vector2;
 #[cfg(feature = "debug")]
 use nalgebra::Vector2;
+use nalgebra::{ComplexField, Vector2};
 #[cfg(feature = "debug")]
 use std::mem::size_of;
 
@@ -23,7 +23,7 @@ pub type Index = usize;
 #[derive(Debug)]
 pub struct Grid {
     cells: Vec<Vec<Vec<Index>>>,
-    cells_used: Vec<(usize, usize)>,
+    pub cells_used: Vec<(usize, usize)>,
     #[cfg(feature = "debug")]
     pub render_data: RenderData,
     #[cfg(feature = "debug")]
@@ -60,6 +60,8 @@ impl Grid {
         for idx in self.cells_used.iter() {
             self.cells[idx.0][idx.1].clear();
         }
+
+        self.cells_used.clear();
     }
 
     pub fn push_idx(&mut self, idx: Index, x: usize, y: usize) {
@@ -71,15 +73,11 @@ impl Grid {
         self.clear();
 
         for (idx, cell) in cells.iter().enumerate() {
-            let r = (cell.position.x * cell.position.x + cell.position.y * cell.position.y).sqrt();
-
-            if r <= RADIUS_WORLD - (cell.radius * 2.0 + cell.radius) {
-                self.push_idx(
-                    idx,
-                    (50.0 + cell.position.x / 10.0) as usize,
-                    (50.0 + cell.position.y / 10.0) as usize,
-                );
-            }
+            self.push_idx(
+                idx,
+                (50.0 + cell.position.x / 10.0) as usize,
+                (50.0 + cell.position.y / 10.0) as usize,
+            );
         }
     }
 
@@ -115,6 +113,10 @@ impl Grid {
 
         for idx1 in idxs_cells1.iter() {
             for idx2 in idxs_cells2.iter() {
+                if Self::is_out_world(&cells[*idx1]) {
+                    Self::solve_collide_border_world(*idx1, cells)
+                }
+
                 if *idx1 != *idx2 && Self::collide(*idx1, *idx2, cells) {
                     Self::solve_collide(*idx1, *idx2, cells);
                 }
@@ -122,14 +124,24 @@ impl Grid {
         }
     }
 
+    pub fn is_out_world(cell: &Cell) -> bool {
+        let radius_world = RADIUS_WORLD - cell.radius * 3.0;
+        let radius_world = radius_world * radius_world;
+        let len_dist_center_world =
+            cell.position.x * cell.position.x + cell.position.y * cell.position.y;
+
+        len_dist_center_world >= radius_world
+    }
+
     pub fn collide(idx1: usize, idx2: usize, cells: &Vec<Cell>) -> bool {
         let cell1 = &cells[idx1];
         let cell2 = &cells[idx2];
 
         let dist = cell2.position - cell1.position;
-        let r = (dist.x * dist.x + dist.y * dist.y).sqrt();
+        let r = dist.x * dist.x + dist.y * dist.y;
 
-        r <= 10.0
+        let diam = cell1.radius*2.0;
+        r <= diam*diam
     }
 
     pub fn solve_collide(idx1: usize, idx2: usize, cells: &mut Vec<Cell>) {
@@ -137,9 +149,19 @@ impl Grid {
         let cell2 = &cells[idx2];
 
         let dist = cell2.position - cell1.position;
-        let r = (dist.x * dist.x + dist.y * dist.y).sqrt();
+        let r = dist.x * dist.x + dist.y * dist.y;
 
-        cells[idx1].velocity -= dist / (r*r);
+        let diam = cell1.radius*2.0;
+        let f = (diam*diam - r) / (diam*diam) * cell1.mass / (1.0 + r);
+        cells[idx1].velocity -= dist * f;
+    }
+
+    pub fn solve_collide_border_world(idx: usize, cells: &mut Vec<Cell>) {
+        let cell = &cells[idx];
+        let radius_world = RADIUS_WORLD - cell.radius * 3.0;
+        let r = (cell.position.x * cell.position.x + cell.position.y * cell.position.y).sqrt();
+        let cof = radius_world/r;
+        cells[idx].position *= cof;
     }
 }
 
