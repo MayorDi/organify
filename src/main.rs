@@ -4,9 +4,10 @@ use glfw::{Action, Context, Key, MouseButton};
 use nalgebra::Vector2;
 use organify::{
     cell::Cell,
-    control::{Camera, Mouse},
+    control::{Camera, Mouse, Tool},
     grid::Grid,
     traits::{Behavior, Render},
+    ui::{Info, Menu, Tools, UiView},
     world::World,
 };
 
@@ -68,10 +69,11 @@ fn main() {
         ..Default::default()
     });
 
+    // --------------------------------
     let mut time = 0.0;
 
     let camera = Rc::new(RefCell::new(Camera::default()));
-    let mut mouse = Mouse::default();
+    let mouse = Rc::new(RefCell::new(Mouse::default()));
 
     #[cfg(not(feature = "debug"))]
     let mut grid = Grid::new();
@@ -83,11 +85,16 @@ fn main() {
             rand::thread_rng().gen_range(-100.0..100.0),
         )));
     }
+    let cells = Rc::new(RefCell::new(cells));
+
     let rd_cells = Cell::render_init(Some(Rc::clone(&camera)));
 
     let mut world = World::new(Vector2::new(0.0, 0.0));
     world.render_init();
     world.render_data.camera = Some(Rc::clone(&camera));
+    let world = Rc::new(RefCell::new(world));
+
+    let tool = Rc::new(RefCell::new(Tool::None));
 
     #[cfg(feature = "debug")]
     let mut grid = Grid::new(world.position, world.radius);
@@ -98,6 +105,14 @@ fn main() {
     {
         grid.render_data.camera = Some(Rc::clone(&camera));
     }
+
+    // ui init data
+
+    let info = Info::new(camera.clone(), mouse.clone(), world.clone(), cells.clone());
+    let tools = Tools::new(tool.clone());
+    let mut menu = Menu::new(UiView::default());
+
+    // ---
 
     unsafe {
         gl::Enable(gl::BLEND);
@@ -110,23 +125,27 @@ fn main() {
         glfw.poll_events();
         egui_ctx.begin_frame(egui_input_state.input.take());
 
-        grid.update_cells(&cells);
-        grid.find_collisions_grid(&mut cells);
-
         {
-            let mut len = cells.len();
-            let mut i = 0;
-            while i < len {
-                cells[i].update();
-                cells[i].check_alive();
+            let cells = &mut *(*cells).borrow_mut();
 
-                if !cells[i].is_alive {
-                    cells.remove(i);
-                    len -= 1;
-                    continue;
+            grid.update_cells(&cells);
+            grid.find_collisions_grid(cells);
+
+            {
+                let mut len = cells.len();
+                let mut i = 0;
+                while i < len {
+                    cells[i].update();
+                    cells[i].check_alive();
+
+                    if !cells[i].is_alive {
+                        cells.remove(i);
+                        len -= 1;
+                        continue;
+                    }
+
+                    i += 1;
                 }
-
-                i += 1;
             }
         }
 
@@ -134,23 +153,21 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl::ClearColor(0.1, 0.1, 0.1, 1.0);
 
-            world.render();
+            (*world).borrow().render();
 
             #[cfg(feature = "debug")]
             grid.render();
 
-            Cell::render(&cells, &rd_cells, time);
+            let cells = &*(*cells).borrow();
+            Cell::render(cells, &rd_cells, time);
         }
-
-        let camera = &mut *(*camera).borrow_mut();
 
         ui_render(
             &egui_ctx,
+            &mut menu,
+            &info,
+            &tools,
             time,
-            camera,
-            &mouse,
-            &world,
-            &cells,
             painter.clone(),
             &mut egui_input_state,
             native_pixels_per_point,
@@ -158,8 +175,9 @@ fn main() {
 
         for (_, event) in glfw::flush_messages(&events) {
             egui_backend::handle_event(event.clone(), &mut egui_input_state);
+            let mouse = &mut *(*mouse).borrow_mut();
 
-            mouse.update_world_position(window.get_size(), &camera);
+            mouse.update_world_position(window.get_size(), &*camera.borrow());
             match event {
                 glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                     window.set_should_close(true);
@@ -174,16 +192,18 @@ fn main() {
                     }
 
                     match mouse.button {
-                        MouseButton::Button2 if mouse.pressed => {
-                            cells.push(Cell::new(mouse.world_position));
+                        MouseButton::Button2
+                            if mouse.pressed && *tool.borrow() == Tool::AddCell =>
+                        {
+                            (*cells).borrow_mut().push(Cell::new(mouse.world_position));
                         }
                         _ => {}
                     }
                 }
 
                 glfw::WindowEvent::Scroll(_, y) => {
-                    if (camera.scale + y as f32) > 0.0 {
-                        camera.scale += y as f32;
+                    if (camera.borrow().scale + y as f32) > 0.0 {
+                        camera.borrow_mut().scale += y as f32;
                     }
                 }
 
@@ -192,10 +212,15 @@ fn main() {
                     mouse.position = Vector2::new(x as f32, y as f32);
 
                     match mouse.button {
-                        glfw::MouseButton::Button1 if mouse.pressed => {
+                        glfw::MouseButton::Button3 if mouse.pressed => {
+                            let camera = &mut *(*camera).borrow_mut();
                             camera.position +=
-                                Vector2::new(-mouse.delta().x, mouse.delta().y) / camera.scale
+                                Vector2::new(-mouse.delta().x, mouse.delta().y)
+                                    / camera.scale
                         }
+
+                        glfw::MouseButton::Button1 if mouse.pressed => {}
+
                         _ => {}
                     }
                 }
@@ -211,59 +236,37 @@ fn main() {
 }
 
 fn ui_render(
-    egui_ctx: &egui::Context,
+    ctx: &egui::Context,
+    menu: &mut Menu,
+    info: &Info,
+    tools: &Tools,
     time: f32,
-    camera: &Camera,
-    mouse: &Mouse,
-    world: &World,
-    cells: &Vec<Cell>,
-
     painter: Rc<RefCell<egui_backend::Painter>>,
     egui_input_state: &mut egui_glfw::EguiInputState,
     native_pixels_per_point: f32,
 ) {
-    egui::Window::new("Info").show(&egui_ctx, |ui| {
-        ui.label(format!("Time: {:.2}", time).as_str());
-        ui.label(format!("Count cells: {}", cells.len()).as_str());
-        ui.label(
-            format!(
-                "Mouse world position: (x: {:.2}, y: {:.2})",
-                mouse.world_position.x, mouse.world_position.y
-            )
-            .as_str(),
-        );
-        ui.label(
-            format!(
-                "Camera position: (x: {:.2}, y: {:.2})",
-                camera.position.x, camera.position.y
-            )
-            .as_str(),
-        );
-        ui.label(format!("Camera scale: {:.1}", camera.scale).as_str());
-        ui.separator();
-        ui.label(
-            format!(
-                "World position: (x: {:.2}, y: {:.2})",
-                world.position.x, world.position.y
-            )
-            .as_str(),
-        );
-        ui.label(format!("World radius: {:.2}", world.radius).as_str());
-    });
+    menu.ui_render(ctx);
+    if menu.ui_view.info_window {
+        info.ui_render(ctx, time);
+    }
+
+    if menu.ui_view.tools_window {
+        tools.ui_render(ctx);
+    }
 
     let egui::FullOutput {
         platform_output,
         textures_delta,
         shapes,
         ..
-    } = egui_ctx.end_frame();
+    } = ctx.end_frame();
 
     //Handle cut, copy text from egui
     if !platform_output.copied_text.is_empty() {
         egui_backend::copy_to_clipboard(egui_input_state, platform_output.copied_text);
     }
 
-    let clipped_shapes = egui_ctx.tessellate(shapes, native_pixels_per_point);
+    let clipped_shapes = ctx.tessellate(shapes, native_pixels_per_point);
     (*painter).borrow_mut().paint_and_update_textures(
         native_pixels_per_point,
         &clipped_shapes,

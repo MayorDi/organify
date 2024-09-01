@@ -54,3 +54,22 @@ impl Default for Mouse {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Tool {
+    MoveCell,
+    AddCell,
+    SelectCell,
+    None,
+}
+
+impl ToString for Tool {
+    fn to_string(&self) -> String {
+        match self {
+            Tool::None => String::from("none"),
+            Tool::MoveCell => String::from("move cell"),
+            Tool::AddCell => String::from("add cell"),
+            Tool::SelectCell => String::from("select cell"),
+        }
+    }
+}
