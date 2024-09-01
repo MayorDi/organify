@@ -215,8 +215,7 @@ fn main() {
                         glfw::MouseButton::Button3 if mouse.pressed => {
                             let camera = &mut *(*camera).borrow_mut();
                             camera.position +=
-                                Vector2::new(-mouse.delta().x, mouse.delta().y)
-                                    / camera.scale
+                                Vector2::new(-mouse.delta().x, mouse.delta().y) / camera.scale
                         }
 
                         glfw::MouseButton::Button1 if mouse.pressed => {}

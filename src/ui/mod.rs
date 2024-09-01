@@ -1,6 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
-use egui_glfw as egui_backend;
 use egui::Context;
+use egui_glfw as egui_backend;
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     cell::Cell,
