@@ -46,8 +46,6 @@ fn main() {
     log::info!("load OpenGL functions");
     glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
 
-    let mut gui_render_data = init_egui_ctx(&mut window);
-
     // --------------------------------
     let mut time = 0.0;
 
@@ -87,6 +85,7 @@ fn main() {
 
     // ui init data
 
+    let mut gui_render_data = init_egui_ctx(&mut window);
     let info = Info::new(camera.clone(), mouse.clone(), world.clone(), cells.clone());
     let tools = Tools::new(tool.clone());
     let mut menu = Menu::new(UiView::default());
