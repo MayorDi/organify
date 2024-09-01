@@ -7,12 +7,10 @@ use organify::{
     control::{Camera, Mouse, Tool},
     grid::Grid,
     traits::{Behavior, Render},
-    ui::{ui_render, Info, Menu, Tools, UiView},
+    ui::{init_egui_ctx, ui_render, Info, Menu, Tools, UiView},
     world::World,
 };
 
-use egui::{vec2, Pos2, Rect};
-use egui_glfw as egui_backend;
 use rand::Rng;
 
 fn main() {
@@ -48,26 +46,7 @@ fn main() {
     log::info!("load OpenGL functions");
     glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
 
-    let painter = Rc::new(RefCell::new(egui_backend::Painter::new(&mut window)));
-    let p = painter.clone();
-    window.set_framebuffer_size_callback(move |_, w, h| unsafe {
-        gl::Viewport(0, 0, w, h);
-        (*p).borrow_mut().canvas_width = w as u32;
-        (*p).borrow_mut().canvas_height = h as u32;
-    });
-    let egui_ctx = egui::Context::default();
-
-    let (width, height) = window.get_framebuffer_size();
-    let native_pixels_per_point = window.get_content_scale().0;
-
-    let mut egui_input_state = egui_backend::EguiInputState::new(egui::RawInput {
-        screen_rect: Some(Rect::from_min_size(
-            Pos2::new(0f32, 0f32),
-            vec2(width as f32, height as f32) / native_pixels_per_point,
-        )),
-
-        ..Default::default()
-    });
+    let mut gui_render_data = init_egui_ctx(&mut window);
 
     // --------------------------------
     let mut time = 0.0;
@@ -123,7 +102,7 @@ fn main() {
     log::info!("Run the main loop");
     while !window.should_close() {
         glfw.poll_events();
-        egui_ctx.begin_frame(egui_input_state.input.take());
+        gui_render_data.begin_frame();
 
         {
             let cells = &mut *(*cells).borrow_mut();
@@ -162,19 +141,10 @@ fn main() {
             Cell::render(cells, &rd_cells, time);
         }
 
-        ui_render(
-            &egui_ctx,
-            &mut menu,
-            &info,
-            &tools,
-            time,
-            painter.clone(),
-            &mut egui_input_state,
-            native_pixels_per_point,
-        );
+        ui_render(&mut menu, &info, &tools, time, &mut gui_render_data);
 
         for (_, event) in glfw::flush_messages(&events) {
-            egui_backend::handle_event(event.clone(), &mut egui_input_state);
+            gui_render_data.event_handler(event.clone());
             let mouse = &mut *(*mouse).borrow_mut();
 
             mouse.update_world_position(window.get_size(), &*camera.borrow());

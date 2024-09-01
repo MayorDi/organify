@@ -1,5 +1,6 @@
-use egui::Context;
-use egui_glfw as egui_backend;
+use egui::{vec2, Context, Pos2, Rect};
+use egui_glfw::{self as egui_backend, EguiInputState, Painter};
+use glfw::{PWindow, WindowEvent};
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
@@ -142,23 +143,67 @@ impl Menu {
     }
 }
 
+pub struct MetaDataRender {
+    pub painter: Rc<RefCell<Painter>>,
+    pub ctx: Context,
+    pub egui_input_state: EguiInputState,
+    pub native_pixels_per_point: f32,
+}
+
+impl MetaDataRender {
+    pub fn event_handler(&mut self, event: WindowEvent) {
+        egui_backend::handle_event(event, &mut self.egui_input_state);
+    }
+
+    pub fn begin_frame(&mut self) {
+        self.ctx.begin_frame(self.egui_input_state.input.take());
+    }
+}
+
+pub fn init_egui_ctx(window: &mut PWindow) -> MetaDataRender {
+    let painter = Rc::new(RefCell::new(egui_backend::Painter::new(window)));
+    let p = painter.clone();
+    window.set_framebuffer_size_callback(move |_, w, h| unsafe {
+        gl::Viewport(0, 0, w, h);
+        (*p).borrow_mut().canvas_width = w as u32;
+        (*p).borrow_mut().canvas_height = h as u32;
+    });
+    let egui_ctx = egui::Context::default();
+
+    let (width, height) = window.get_framebuffer_size();
+    let native_pixels_per_point = window.get_content_scale().0;
+
+    let egui_input_state = egui_backend::EguiInputState::new(egui::RawInput {
+        screen_rect: Some(Rect::from_min_size(
+            Pos2::new(0f32, 0f32),
+            vec2(width as f32, height as f32) / native_pixels_per_point,
+        )),
+
+        ..Default::default()
+    });
+
+    MetaDataRender {
+        painter,
+        ctx: egui_ctx,
+        egui_input_state,
+        native_pixels_per_point,
+    }
+}
+
 pub fn ui_render(
-    ctx: &egui::Context,
     menu: &mut Menu,
     info: &Info,
     tools: &Tools,
     time: f32,
-    painter: Rc<RefCell<egui_backend::Painter>>,
-    egui_input_state: &mut egui_glfw::EguiInputState,
-    native_pixels_per_point: f32,
+    meta_data_render: &mut MetaDataRender,
 ) {
-    menu.ui_render(ctx);
+    menu.ui_render(&meta_data_render.ctx);
     if menu.ui_view.info_window {
-        info.ui_render(ctx, time);
+        info.ui_render(&meta_data_render.ctx, time);
     }
 
     if menu.ui_view.tools_window {
-        tools.ui_render(ctx);
+        tools.ui_render(&meta_data_render.ctx);
     }
 
     let egui::FullOutput {
@@ -166,17 +211,24 @@ pub fn ui_render(
         textures_delta,
         shapes,
         ..
-    } = ctx.end_frame();
+    } = meta_data_render.ctx.end_frame();
 
     //Handle cut, copy text from egui
     if !platform_output.copied_text.is_empty() {
-        egui_backend::copy_to_clipboard(egui_input_state, platform_output.copied_text);
+        egui_backend::copy_to_clipboard(
+            &mut meta_data_render.egui_input_state,
+            platform_output.copied_text,
+        );
     }
 
-    let clipped_shapes = ctx.tessellate(shapes, native_pixels_per_point);
-    (*painter).borrow_mut().paint_and_update_textures(
-        native_pixels_per_point,
-        &clipped_shapes,
-        &textures_delta,
-    );
+    let clipped_shapes = meta_data_render
+        .ctx
+        .tessellate(shapes, meta_data_render.native_pixels_per_point);
+    (*meta_data_render.painter)
+        .borrow_mut()
+        .paint_and_update_textures(
+            meta_data_render.native_pixels_per_point,
+            &clipped_shapes,
+            &textures_delta,
+        );
 }
