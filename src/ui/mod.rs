@@ -1,5 +1,5 @@
 use std::{cell::RefCell, rc::Rc};
-
+use egui_glfw as egui_backend;
 use egui::Context;
 
 use crate::{
@@ -140,4 +140,43 @@ impl Menu {
             },
         );
     }
+}
+
+pub fn ui_render(
+    ctx: &egui::Context,
+    menu: &mut Menu,
+    info: &Info,
+    tools: &Tools,
+    time: f32,
+    painter: Rc<RefCell<egui_backend::Painter>>,
+    egui_input_state: &mut egui_glfw::EguiInputState,
+    native_pixels_per_point: f32,
+) {
+    menu.ui_render(ctx);
+    if menu.ui_view.info_window {
+        info.ui_render(ctx, time);
+    }
+
+    if menu.ui_view.tools_window {
+        tools.ui_render(ctx);
+    }
+
+    let egui::FullOutput {
+        platform_output,
+        textures_delta,
+        shapes,
+        ..
+    } = ctx.end_frame();
+
+    //Handle cut, copy text from egui
+    if !platform_output.copied_text.is_empty() {
+        egui_backend::copy_to_clipboard(egui_input_state, platform_output.copied_text);
+    }
+
+    let clipped_shapes = ctx.tessellate(shapes, native_pixels_per_point);
+    (*painter).borrow_mut().paint_and_update_textures(
+        native_pixels_per_point,
+        &clipped_shapes,
+        &textures_delta,
+    );
 }
