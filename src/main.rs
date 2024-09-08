@@ -136,7 +136,14 @@ fn main() {
             Cell::render(cells, &rd_cells, time);
         }
 
-        ui_render(&mut menu, &info, &tools, &mut debug_window, time, &mut gui_render_data);
+        ui_render(
+            &mut menu,
+            &info,
+            &tools,
+            &mut debug_window,
+            time,
+            &mut gui_render_data,
+        );
 
         for (_, event) in glfw::flush_messages(&events) {
             gui_render_data.event_handler(event.clone());

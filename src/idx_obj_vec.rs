@@ -1,4 +1,7 @@
-use std::{ops::{Index, IndexMut}, slice::{Iter, IterMut}};
+use std::{
+    ops::{Index, IndexMut},
+    slice::{Iter, IterMut},
+};
 
 #[derive(Debug, Clone)]
 pub struct IdxObjVec<T> {
@@ -30,7 +33,7 @@ impl<T> IdxObjVec<T> {
         } else {
             None
         }
-    } 
+    }
 
     pub fn get_mut_object(&mut self, index: usize) -> Option<&mut T> {
         if let Some(obj) = &mut self.objects[index] {
@@ -72,13 +75,13 @@ impl<T> IdxObjVec<T> {
 
 impl<T> Index<usize> for IdxObjVec<T> {
     type Output = Option<T>;
-    
+
     fn index(&self, index: usize) -> &Self::Output {
         &self.objects[index]
     }
 }
 
-impl <T> IndexMut<usize> for IdxObjVec<T> {
+impl<T> IndexMut<usize> for IdxObjVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.objects[index]
     }

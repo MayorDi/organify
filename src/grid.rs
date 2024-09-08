@@ -7,7 +7,6 @@ use crate::{
     idx_obj_vec::IdxObjVec,
 };
 
-
 use crate::{
     opengl::prelude::{get_location, GetId},
     opengl::prelude::{Build, Shader},
@@ -177,7 +176,6 @@ impl Render for Grid {
         let start_point = self.world_position.x - self.world_radius;
         let mut vertex_data = vec![];
         unsafe {
-
             for x in 0..SIZE_GRID[0] {
                 for y in 0..SIZE_GRID[1] {
                     let dx = start_point + x as f32 * 10.0;
@@ -225,14 +223,7 @@ impl Render for Grid {
                 gl::DYNAMIC_DRAW,
             );
 
-            gl::VertexAttribPointer(
-                0,
-                3,
-                gl::FLOAT,
-                gl::FALSE,
-                0 as _,
-                null(),
-            );
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0 as _, null());
             gl::EnableVertexAttribArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
@@ -247,11 +238,11 @@ impl Render for Grid {
                 1,
                 [camera.borrow().scale].as_ptr() as _,
             );
-            
+
             gl::Enable(gl::DEPTH_TEST);
-            gl::DrawArrays(gl::TRIANGLES, 0, (vertex_data.len()/3) as _);
+            gl::DrawArrays(gl::TRIANGLES, 0, (vertex_data.len() / 3) as _);
             gl::Disable(gl::DEPTH_TEST);
-            
+
             gl::UseProgram(0);
         }
     }
