@@ -3,11 +3,7 @@ use std::{cell::RefCell, mem::size_of, rc::Rc};
 use nalgebra::Vector2;
 
 use crate::{
-    consts::RADIUS_WORLD,
-    control::Camera,
-    opengl::prelude::{get_location, Build, GetId, Program, Shader},
-    render_data::RenderData,
-    traits::Behavior,
+    consts::RADIUS_WORLD, control::Camera, idx_obj_vec::IdxObjVec, opengl::prelude::{get_location, Build, GetId, Program, Shader}, render_data::RenderData, traits::Behavior
 };
 
 #[derive(Debug, Clone, Default)]
@@ -74,11 +70,13 @@ impl Cell {
         }
     }
 
-    pub fn render(cells: &Vec<Cell>, render_data: &RenderData, time: f32) {
+    pub fn render(cells: &IdxObjVec<Cell>, render_data: &RenderData, time: f32) {
         let camera = render_data.camera.as_ref().unwrap();
         let mut vertex_data = vec![];
 
-        for cell in cells {
+        for cell in cells.iter_objects() {
+            if let None = cell { continue; }
+            let cell = cell.as_ref().unwrap();
             vertex_data.extend([
                 cell.position.x - cell.radius,
                 cell.position.y - cell.radius,

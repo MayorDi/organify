@@ -6,6 +6,7 @@ use organify::{
     cell::Cell,
     control::{Camera, Mouse, Tool},
     grid::Grid,
+    idx_obj_vec::IdxObjVec,
     traits::{Behavior, Render},
     ui::{init_egui_ctx, ui_render, Info, Menu, Tools, UiView},
     world::World,
@@ -55,7 +56,7 @@ fn main() {
     #[cfg(not(feature = "debug"))]
     let mut grid = Grid::new();
 
-    let mut cells = vec![];
+    let mut cells = IdxObjVec::new();
     for _ in 0..1000 {
         cells.push(Cell::new(Vector2::new(
             rand::thread_rng().gen_range(-100.0..100.0),
@@ -110,16 +111,18 @@ fn main() {
             grid.find_collisions_grid(cells);
 
             {
-                let mut len = cells.len();
+                let mut len = cells.count_objects();
                 let mut i = 0;
                 while i < len {
-                    cells[i].update();
-                    cells[i].check_alive();
+                    if let Some(cell) = &mut cells[i] {
+                        cell.update();
+                        cell.check_alive();
 
-                    if !cells[i].is_alive {
-                        cells.remove(i);
-                        len -= 1;
-                        continue;
+                        if !cell.is_alive {
+                            cells.remove(i);
+                            len -= 1;
+                            continue;
+                        }
                     }
 
                     i += 1;

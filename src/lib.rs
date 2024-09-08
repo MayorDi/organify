@@ -8,3 +8,4 @@ pub mod render_data;
 pub mod traits;
 pub mod ui;
 pub mod world;
+pub mod idx_obj_vec;

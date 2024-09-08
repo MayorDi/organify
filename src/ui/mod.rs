@@ -4,16 +4,14 @@ use glfw::{PWindow, WindowEvent};
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    cell::Cell,
-    control::{Camera, Mouse, Tool},
-    world::World,
+    cell::Cell, control::{Camera, Mouse, Tool}, idx_obj_vec::IdxObjVec, world::World
 };
 
 pub struct Info {
     camera: Rc<RefCell<Camera>>,
     mouse: Rc<RefCell<Mouse>>,
     world: Rc<RefCell<World>>,
-    cells: Rc<RefCell<Vec<Cell>>>,
+    cells: Rc<RefCell<IdxObjVec<Cell>>>,
 }
 
 impl Info {
@@ -21,7 +19,7 @@ impl Info {
         camera: Rc<RefCell<Camera>>,
         mouse: Rc<RefCell<Mouse>>,
         world: Rc<RefCell<World>>,
-        cells: Rc<RefCell<Vec<Cell>>>,
+        cells: Rc<RefCell<IdxObjVec<Cell>>>,
     ) -> Self {
         Self {
             camera,
@@ -38,7 +36,7 @@ impl Info {
 
         egui::Window::new("Info").show(ctx, |ui| {
             ui.label(format!("Time: {:.2}", time).as_str());
-            ui.label(format!("Count cells: {}", cells.len()).as_str());
+            ui.label(format!("Count cells: {}", cells.count_objects() - cells.count_idxs()).as_str());
             ui.label(
                 format!(
                     "Mouse world position: (x: {:.2}, y: {:.2})",

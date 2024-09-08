@@ -6,6 +6,7 @@ use std::mem::size_of;
 use crate::{
     cell::Cell,
     consts::{RADIUS_WORLD, SIZE_GRID},
+    idx_obj_vec::IdxObjVec,
 };
 
 #[cfg(feature = "debug")]
@@ -70,19 +71,21 @@ impl Grid {
         self.cells_used.push((x, y));
     }
 
-    pub fn update_cells(&mut self, cells: &Vec<Cell>) {
+    pub fn update_cells(&mut self, cells: &IdxObjVec<Cell>) {
         self.clear();
 
-        for (idx, cell) in cells.iter().enumerate() {
-            self.push_idx(
-                idx,
-                (50.0 + cell.position.x / 10.0) as usize,
-                (50.0 + cell.position.y / 10.0) as usize,
-            );
+        for (idx, cell) in cells.iter_objects().enumerate() {
+            if let Some(cell) = cell {
+                self.push_idx(
+                    idx,
+                    (50.0 + cell.position.x / 10.0) as usize,
+                    (50.0 + cell.position.y / 10.0) as usize,
+                );
+            }
         }
     }
 
-    pub fn find_collisions_grid(&self, cells: &mut Vec<Cell>) {
+    pub fn find_collisions_grid(&self, cells: &mut IdxObjVec<Cell>) {
         for x in 1..(SIZE_GRID[0] - 1) {
             for y in 1..(SIZE_GRID[1] - 1) {
                 let current_cell_grid = self.get(x, y);
@@ -106,7 +109,7 @@ impl Grid {
         &self,
         idxs_cells1: &Vec<usize>,
         idxs_cells2: &Vec<usize>,
-        cells: &mut Vec<Cell>,
+        cells: &mut IdxObjVec<Cell>,
     ) {
         if idxs_cells1.is_empty() && idxs_cells2.is_empty() {
             return;
@@ -114,8 +117,10 @@ impl Grid {
 
         for idx1 in idxs_cells1.iter() {
             for idx2 in idxs_cells2.iter() {
-                if Self::is_out_world(&cells[*idx1]) {
-                    Self::solve_collide_border_world(*idx1, cells)
+                if let Some(cell) = &mut cells[*idx1] {
+                    if Self::is_out_world(&cell) {
+                        Self::solve_collide_border_world(*idx1, cells)
+                    }
                 }
 
                 if *idx1 != *idx2 && Self::collide(*idx1, *idx2, cells) {
@@ -134,35 +139,37 @@ impl Grid {
         len_dist_center_world >= radius_world
     }
 
-    pub fn collide(idx1: usize, idx2: usize, cells: &Vec<Cell>) -> bool {
-        let cell1 = &cells[idx1];
-        let cell2 = &cells[idx2];
+    pub fn collide(idx1: usize, idx2: usize, cells: &IdxObjVec<Cell>) -> bool {
+        if let (Some(cell1), Some(cell2)) = (&cells[idx1], &cells[idx2]) {
+            let dist = cell2.position - cell1.position;
+            let r = dist.x * dist.x + dist.y * dist.y;
 
-        let dist = cell2.position - cell1.position;
-        let r = dist.x * dist.x + dist.y * dist.y;
-
-        let diam = cell1.radius * 2.0;
-        r <= diam * diam
+            let diam = cell1.radius * 2.0;
+            
+            r <= diam * diam
+        } else {
+            false
+        }
     }
 
-    pub fn solve_collide(idx1: usize, idx2: usize, cells: &mut Vec<Cell>) {
-        let cell1 = &cells[idx1];
-        let cell2 = &cells[idx2];
+    pub fn solve_collide(idx1: usize, idx2: usize, cells: &mut IdxObjVec<Cell>) {
+        if let (Some(cell1), Some(cell2)) = (&cells[idx1], &cells[idx2]) {
+            let dist = cell2.position - cell1.position;
+            let r = dist.x * dist.x + dist.y * dist.y;
 
-        let dist = cell2.position - cell1.position;
-        let r = dist.x * dist.x + dist.y * dist.y;
-
-        let diam = cell1.radius * 2.0;
-        let f = (diam * diam - r) / (diam * diam) * cell1.mass / (1.0 + r);
-        cells[idx1].velocity -= dist * f;
+            let diam = cell1.radius * 2.0;
+            let f = (diam * diam - r) / (diam * diam) * cell1.mass / (1.0 + r);
+            cells.get_mut_object(idx1).unwrap().velocity -= dist * f;
+        }
     }
 
-    pub fn solve_collide_border_world(idx: usize, cells: &mut Vec<Cell>) {
-        let cell = &cells[idx];
-        let radius_world = RADIUS_WORLD - cell.radius * 3.0;
-        let r = (cell.position.x * cell.position.x + cell.position.y * cell.position.y).sqrt();
-        let cof = radius_world / r;
-        cells[idx].position *= cof;
+    pub fn solve_collide_border_world(idx: usize, cells: &mut IdxObjVec<Cell>) {
+        if let Some(cell) = &mut cells[idx] {
+            let radius_world = RADIUS_WORLD - cell.radius * 3.0;
+            let r = (cell.position.x * cell.position.x + cell.position.y * cell.position.y).sqrt();
+            let cof = radius_world / r;
+            cell.position *= cof;
+        }
     }
 }
 
