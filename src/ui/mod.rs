@@ -1,7 +1,10 @@
+use debug_tools::DebugWindow;
 use egui::{vec2, Context, Pos2, Rect};
 use egui_glfw::{self as egui_backend, EguiInputState, Painter};
 use glfw::{PWindow, WindowEvent};
 use std::{cell::RefCell, rc::Rc};
+
+pub mod debug_tools;
 
 use crate::{
     cell::Cell, control::{Camera, Mouse, Tool}, idx_obj_vec::IdxObjVec, world::World
@@ -105,6 +108,7 @@ impl Tools {
 pub struct UiView {
     pub info_window: bool,
     pub tools_window: bool,
+    pub debug_window: bool,
 }
 
 pub struct Menu {
@@ -134,6 +138,7 @@ impl Menu {
                     ui.menu_button("View", |ui| {
                         ui.checkbox(&mut self.ui_view.info_window, "Info window");
                         ui.checkbox(&mut self.ui_view.tools_window, "Tools window");
+                        ui.checkbox(&mut self.ui_view.debug_window, "Debug window");
                     });
                 });
             },
@@ -192,6 +197,7 @@ pub fn ui_render(
     menu: &mut Menu,
     info: &Info,
     tools: &Tools,
+    debug_window: &mut DebugWindow,
     time: f32,
     meta_data_render: &mut MetaDataRender,
 ) {
@@ -202,6 +208,10 @@ pub fn ui_render(
 
     if menu.ui_view.tools_window {
         tools.ui_render(&meta_data_render.ctx);
+    }
+
+    if menu.ui_view.debug_window {
+        debug_window.ui_render(&meta_data_render.ctx);
     }
 
     let egui::FullOutput {

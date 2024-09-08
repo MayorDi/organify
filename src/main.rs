@@ -8,7 +8,7 @@ use organify::{
     grid::Grid,
     idx_obj_vec::IdxObjVec,
     traits::{Behavior, Render},
-    ui::{init_egui_ctx, ui_render, Info, Menu, Tools, UiView},
+    ui::{debug_tools::DebugWindow, init_egui_ctx, ui_render, Info, Menu, Tools, UiView},
     world::World,
 };
 
@@ -89,6 +89,7 @@ fn main() {
     let mut gui_render_data = init_egui_ctx(&mut window);
     let info = Info::new(camera.clone(), mouse.clone(), world.clone(), cells.clone());
     let tools = Tools::new(tool.clone());
+    let mut debug_window = DebugWindow::new();
     let mut menu = Menu::new(UiView::default());
 
     // ---
@@ -143,7 +144,7 @@ fn main() {
             Cell::render(cells, &rd_cells, time);
         }
 
-        ui_render(&mut menu, &info, &tools, time, &mut gui_render_data);
+        ui_render(&mut menu, &info, &tools, &mut debug_window, time, &mut gui_render_data);
 
         for (_, event) in glfw::flush_messages(&events) {
             gui_render_data.event_handler(event.clone());
