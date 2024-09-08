@@ -2,11 +2,8 @@
 
 out vec4 color;
 
-uniform bool u_is_empty;
+in float count_cells;
 
 void main(void) {
-    if (u_is_empty)
-        color = vec4(1.0, 0.0, 0.0, 1.0);
-    else
-        color = vec4(0.0, 1.0, 0.0, 1.0);
+    color = vec4((1.0 - count_cells)/5.0, count_cells/2.0, 0.0, 0.01);
 }

@@ -53,9 +53,6 @@ fn main() {
     let camera = Rc::new(RefCell::new(Camera::default()));
     let mouse = Rc::new(RefCell::new(Mouse::default()));
 
-    #[cfg(not(feature = "debug"))]
-    let mut grid = Grid::new();
-
     let mut cells = IdxObjVec::new();
     for _ in 0..1000 {
         cells.push(Cell::new(Vector2::new(
@@ -74,15 +71,9 @@ fn main() {
 
     let tool = Rc::new(RefCell::new(Tool::None));
 
-    #[cfg(feature = "debug")]
-    let mut grid = Grid::new(world.position, world.radius);
-
-    #[cfg(feature = "debug")]
+    let mut grid = Grid::new(world.borrow().position, world.borrow().radius);
     grid.render_init();
-    #[cfg(feature = "debug")]
-    {
-        grid.render_data.camera = Some(Rc::clone(&camera));
-    }
+    grid.render_data.camera = Some(Rc::clone(&camera));
 
     // ui init data
 
@@ -137,8 +128,9 @@ fn main() {
 
             (*world).borrow().render();
 
-            #[cfg(feature = "debug")]
-            grid.render();
+            if debug_window.view_grid {
+                grid.render();
+            }
 
             let cells = &*(*cells).borrow();
             Cell::render(cells, &rd_cells, time);

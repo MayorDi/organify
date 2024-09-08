@@ -1,6 +1,6 @@
 use std::{cell::RefCell, mem::size_of, rc::Rc};
 
-use nalgebra::Vector2;
+use nalgebra::{Rotation2, Vector2};
 
 use crate::{
     consts::RADIUS_WORLD, control::Camera, idx_obj_vec::IdxObjVec, opengl::prelude::{get_location, Build, GetId, Program, Shader}, render_data::RenderData, traits::Behavior
@@ -13,7 +13,8 @@ pub struct Cell {
     pub mass: f32,
     pub radius: f32,
     pub is_alive: bool,
-    pub direction: Vector2<f32>,
+
+    pub direction: Rotation2<f32>,
 }
 
 impl Cell {
@@ -23,6 +24,7 @@ impl Cell {
             radius: 5.0,
             mass: 4.7,
             is_alive: true,
+            direction: Rotation2::new(0.0),
             ..Default::default()
         }
     }

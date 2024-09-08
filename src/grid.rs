@@ -1,7 +1,5 @@
-#[cfg(feature = "debug")]
 use nalgebra::Vector2;
-#[cfg(feature = "debug")]
-use std::mem::size_of;
+use std::{mem::size_of, ptr::null};
 
 use crate::{
     cell::Cell,
@@ -9,13 +7,10 @@ use crate::{
     idx_obj_vec::IdxObjVec,
 };
 
-#[cfg(feature = "debug")]
-use crate::control::Camera;
 
-#[cfg(feature = "debug")]
 use crate::{
     opengl::prelude::{get_location, GetId},
-    opengl::prelude::{Build, Program, Shader},
+    opengl::prelude::{Build, Shader},
     render_data::RenderData,
     traits::Render,
 };
@@ -26,28 +21,16 @@ pub type Index = usize;
 pub struct Grid {
     cells: Vec<Vec<Vec<Index>>>,
     pub cells_used: Vec<(usize, usize)>,
-    #[cfg(feature = "debug")]
     pub render_data: RenderData,
-    #[cfg(feature = "debug")]
     world_position: Vector2<f32>,
-    #[cfg(feature = "debug")]
     world_radius: f32,
 }
 
 impl Grid {
-    #[cfg(not(feature = "debug"))]
-    pub fn new() -> Self {
-        Self {
-            cells: vec![vec![vec![]; SIZE_GRID[1]]; SIZE_GRID[0]],
-            cells_used: vec![],
-        }
-    }
-
-    #[cfg(feature = "debug")]
     pub fn new(world_position: Vector2<f32>, world_radius: f32) -> Self {
         Self {
             cells: vec![vec![vec![]; SIZE_GRID[1]]; SIZE_GRID[0]],
-            #[cfg(feature = "debug")]
+            cells_used: vec![],
             render_data: RenderData::default(),
             world_position,
             world_radius,
@@ -145,7 +128,7 @@ impl Grid {
             let r = dist.x * dist.x + dist.y * dist.y;
 
             let diam = cell1.radius * 2.0;
-            
+
             r <= diam * diam
         } else {
             false
@@ -173,7 +156,6 @@ impl Grid {
     }
 }
 
-#[cfg(feature = "debug")]
 impl Render for Grid {
     fn render_init(&mut self) {
         let vs_src = include_bytes!("../res/shaders/grid.vert");
@@ -187,25 +169,43 @@ impl Render for Grid {
         unsafe {
             gl::GenVertexArrays(1, &mut self.render_data.vao);
             gl::GenBuffers(1, &mut self.render_data.vbo);
-
-            gl::BindVertexArray(self.render_data.vao);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.render_data.vbo);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (4 * 2 * size_of::<f32>()) as isize,
-                std::ptr::null(),
-                gl::DYNAMIC_DRAW,
-            );
-
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::BindVertexArray(0);
         }
     }
 
     fn render(&self) {
         let camera = self.render_data.camera.as_ref().unwrap();
         let start_point = self.world_position.x - self.world_radius;
+        let mut vertex_data = vec![];
         unsafe {
+
+            for x in 0..SIZE_GRID[0] {
+                for y in 0..SIZE_GRID[1] {
+                    let dx = start_point + x as f32 * 10.0;
+                    let dy = start_point + y as f32 * 10.0;
+                    let z = self.get(x, y).len() as f32;
+                    vertex_data.extend([
+                        dx,
+                        dy,
+                        z,
+                        dx + 10.0,
+                        dy,
+                        z,
+                        dx,
+                        dy + 10.0,
+                        z,
+                        dx,
+                        dy + 10.0,
+                        z,
+                        dx + 10.0,
+                        dy + 10.0,
+                        z,
+                        dx + 10.0,
+                        dy,
+                        z,
+                    ]);
+                }
+            }
+
             let mut size_viewport = [0, 0, 0, 0];
             gl::GetIntegerv(gl::VIEWPORT, &mut size_viewport[0]);
 
@@ -216,43 +216,42 @@ impl Render for Grid {
                 size_viewport[3] as f32,
             );
             gl::BindVertexArray(self.render_data.vao);
-            for x in 0..SIZE_GRID[0] {
-                for y in 0..SIZE_GRID[1] {
-                    let dx = start_point + x as f32 * 10.0;
-                    let dy = start_point + y as f32 * 10.0;
-                    let vertex_data = [dx, dy, dx + 10.0, dy, dx + 10.0, dy + 10.0, dx, dy + 10.0];
 
-                    gl::BindBuffer(gl::ARRAY_BUFFER, self.render_data.vbo);
-                    gl::BufferSubData(
-                        gl::ARRAY_BUFFER,
-                        0,
-                        (4 * 2 * size_of::<f32>()) as isize,
-                        vertex_data.as_ptr() as _,
-                    );
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.render_data.vbo);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (vertex_data.len() * size_of::<f32>()) as isize,
+                vertex_data.as_ptr() as _,
+                gl::DYNAMIC_DRAW,
+            );
 
-                    gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, 0, std::ptr::null());
-                    gl::EnableVertexAttribArray(0);
-                    gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+            gl::VertexAttribPointer(
+                0,
+                3,
+                gl::FLOAT,
+                gl::FALSE,
+                0 as _,
+                null(),
+            );
+            gl::EnableVertexAttribArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
-                    gl::Uniform1i(
-                        get_location(&self.render_data.program, "u_is_empty"),
-                        self.get(x, y).is_empty() as _,
-                    );
-                    gl::Uniform2fv(
-                        get_location(&self.render_data.program, "u_camera.position"),
-                        1,
-                        [camera.borrow().position.x, camera.borrow().position.y].as_ptr() as _,
-                    );
+            gl::Uniform2fv(
+                get_location(&self.render_data.program, "u_camera.position"),
+                1,
+                [camera.borrow().position.x, camera.borrow().position.y].as_ptr() as _,
+            );
 
-                    gl::Uniform1fv(
-                        get_location(&self.render_data.program, "u_camera.scale"),
-                        1,
-                        [camera.borrow().scale].as_ptr() as _,
-                    );
-                    gl::DrawArrays(gl::LINE_LOOP, 0, 4);
-                }
-            }
-            gl::BindVertexArray(0);
+            gl::Uniform1fv(
+                get_location(&self.render_data.program, "u_camera.scale"),
+                1,
+                [camera.borrow().scale].as_ptr() as _,
+            );
+            
+            gl::Enable(gl::DEPTH_TEST);
+            gl::DrawArrays(gl::TRIANGLES, 0, (vertex_data.len()/3) as _);
+            gl::Disable(gl::DEPTH_TEST);
+            
             gl::UseProgram(0);
         }
     }
