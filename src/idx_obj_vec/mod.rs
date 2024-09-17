@@ -1,7 +1,11 @@
+pub mod iter;
+
 use std::{
     ops::{Index, IndexMut},
     slice::{Iter, IterMut},
 };
+
+use self::iter::Iter as IterIdxObjVec;
 
 #[derive(Debug, Clone)]
 pub struct IdxObjVec<T> {
@@ -64,8 +68,8 @@ impl<T> IdxObjVec<T> {
         self.idxs.iter_mut()
     }
 
-    pub fn iter_objects(&self) -> Iter<'_, Option<T>> {
-        self.objects.iter()
+    pub fn iter_objects(&self) -> IterIdxObjVec<'_, T> {
+        IterIdxObjVec::new(self)
     }
 
     pub fn iter_mut_objects(&mut self) -> IterMut<'_, Option<T>> {
@@ -86,3 +90,5 @@ impl<T> IndexMut<usize> for IdxObjVec<T> {
         &mut self.objects[index]
     }
 }
+
+

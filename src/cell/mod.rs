@@ -42,6 +42,7 @@ impl Behavior for Cell {
         }
 
         self.position += self.velocity;
+        self.velocity += Vector2::new(0.0, -1.0);
         self.velocity *= 0.9;
     }
 
@@ -82,10 +83,6 @@ impl Cell {
         let mut vertex_data = vec![];
 
         for cell in cells.iter_objects() {
-            if let None = cell {
-                continue;
-            }
-            let cell = cell.as_ref().unwrap();
             vertex_data.extend([
                 cell.position.x - cell.radius,
                 cell.position.y - cell.radius,

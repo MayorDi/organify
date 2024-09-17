@@ -57,13 +57,11 @@ impl Grid {
         self.clear();
 
         for (idx, cell) in cells.iter_objects().enumerate() {
-            if let Some(cell) = cell {
-                self.push_idx(
-                    idx,
-                    (50.0 + cell.position.x / 10.0) as usize,
-                    (50.0 + cell.position.y / 10.0) as usize,
-                );
-            }
+            self.push_idx(
+                idx,
+                (50.0 + cell.position.x / 10.0) as usize,
+                (50.0 + cell.position.y / 10.0) as usize,
+            );
         }
     }
 
