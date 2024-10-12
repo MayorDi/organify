@@ -12,11 +12,10 @@ rust-version = "1.80.0"
 nalgebra = "0.33.0"
 gl = "0.14.0"
 rand = "*"
-glfw = "0.55.0"
+glfw = { version = "0.55.0" }
 log = { version = "0.4.22", optional = true }
 env_logger = { version = "0.11.5", optional = true }
 egui = "0.27.1"
 
 [features]
 log = ["dep:log", "dep:env_logger"]
-debug = []
