@@ -17,6 +17,9 @@ impl Game {
         let mut wc = Self::init_window_components();
 
         gl::load_with(|symbol| wc.window.get_proc_address(symbol) as *const _);
+        wc.window.set_framebuffer_size_callback(|_, w, h| unsafe {
+            gl::Viewport(0, 0, w, h);dbg!()
+        });
         wc.window.set_all_polling(true);
         wc.window.make_current();
 
@@ -120,7 +123,6 @@ impl Game {
         } = egui_components;
 
         egui_ctx.begin_frame(egui_input_state.input.take());
-
         Self::create_ui(egui_ctx);
 
         let egui::FullOutput {
@@ -136,6 +138,7 @@ impl Game {
 
         let clipped_shapes = egui_ctx.tessellate(shapes, *native_pixels_per_point);
         painter.paint_and_update_textures(
+            &egui_ctx,
             *native_pixels_per_point,
             &clipped_shapes,
             &textures_delta,
