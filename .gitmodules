@@ -1,0 +1,3 @@
+[submodule "libs/egui_glfw"]
+	path = libs/egui_glfw
+	url = https://github.com/v2ny/egui_glfw.git
