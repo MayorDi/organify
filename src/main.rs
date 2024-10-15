@@ -1,1 +1,3 @@
-fn main() {}
+fn main() {
+    organify::game::Game::init().run();
+}
