@@ -18,7 +18,8 @@ impl Game {
 
         gl::load_with(|symbol| wc.window.get_proc_address(symbol) as *const _);
         wc.window.set_framebuffer_size_callback(|_, w, h| unsafe {
-            gl::Viewport(0, 0, w, h);dbg!()
+            gl::Viewport(0, 0, w, h);
+            dbg!()
         });
         wc.window.set_all_polling(true);
         wc.window.make_current();

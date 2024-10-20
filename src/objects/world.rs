@@ -8,11 +8,6 @@ pub struct World {
 
 impl World {
     pub fn new(position: Vector2<f32>, radius: f32) -> Self {
-        Self {
-            position,
-            radius
-        }
+        Self { position, radius }
     }
 }
-
-

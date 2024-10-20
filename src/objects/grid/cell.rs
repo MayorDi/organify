@@ -1,13 +1,11 @@
 #[derive(Debug, Clone)]
 pub struct Cell {
-    pub indexes: Vec<usize>
+    pub indexes: Vec<usize>,
 }
 
 impl Cell {
     pub fn new() -> Self {
-        Self {
-            indexes: vec![]
-        }
+        Self { indexes: vec![] }
     }
 
     pub fn clear(&mut self) {

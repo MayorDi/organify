@@ -118,5 +118,10 @@ where
 }
 
 pub fn get_location<T: GetId>(program: &T, name: &str) -> i32 {
-    unsafe { gl::GetUniformLocation(program.id(), std::ffi::CStr::as_ptr(&CString::new(name).unwrap())) }
+    unsafe {
+        gl::GetUniformLocation(
+            program.id(),
+            std::ffi::CStr::as_ptr(&CString::new(name).unwrap()),
+        )
+    }
 }

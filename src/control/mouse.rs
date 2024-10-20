@@ -32,5 +32,5 @@ pub enum MouseButton {
     #[default]
     Button1,
     Button2,
-    Button3
+    Button3,
 }
