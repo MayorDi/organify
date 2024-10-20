@@ -6,7 +6,6 @@ use super::prelude::{Build, Delete, GetId, Status};
 pub struct Shader {
     id: u32,
     status: StatusShader,
-    src: Vec<u8>,
 }
 
 impl Shader {
@@ -23,7 +22,6 @@ impl Shader {
             Self {
                 id,
                 status: Default::default(),
-                src,
             }
         }
     }
