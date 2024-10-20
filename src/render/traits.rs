@@ -1,3 +1,5 @@
+use super::RenderContext;
+
 pub trait Render {
-    fn render(&self);
+    fn render(&self, ctx: &RenderContext);
 }

@@ -3,3 +3,4 @@ pub mod objects;
 pub mod render;
 pub mod control;
 pub mod game;
+pub mod opengl;
